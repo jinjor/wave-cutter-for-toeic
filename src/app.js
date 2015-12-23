@@ -1,25 +1,15 @@
 var logic = require('./logic.js');
 var async = require('async');
 var JSZip = require("jszip");
+var snabbdom = require('snabbdom');
+var patch = snabbdom.init([ // Init patch function with choosen modules
+  require('snabbdom/modules/class'), // makes it easy to toggle classes
+  require('snabbdom/modules/props'), // for setting properties on DOM elements
+  require('snabbdom/modules/style'), // handles styling on elements with support for animations
+  require('snabbdom/modules/eventlisteners'), // attaches event listeners
+]);
+var h = require('snabbdom/h'); // helper function for creating VNodes
 
-var E = function(tag, attributes, children) {
-  var el = document.createElement(tag);
-  attributes && Object.keys(attributes).forEach(function(key) {
-    el.setAttribute(key, attributes[key]);
-  });
-  children && R(el, children);
-  return el;
-};
-var Q = document.querySelectorAll.bind(document);
-var R = function(el, children) {
-  el.innerHTML = '';
-  children.forEach(function(child) {
-    if(typeof child === 'string') {
-      child = el.createTextNode(child);
-    }
-    el.appendChild(child);
-  });
-};
 function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps) {
   var lib = new lamejs();
   var mp3encoder = new lib.Mp3Encoder(channels, sampleRate, kbps);
@@ -49,6 +39,7 @@ function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps) {
 
 var model = {
   actions: [],
+  actionCursor: -1,
   source: null,
   playingPosition: null,
   startTime: null,
@@ -70,13 +61,14 @@ function update(type, data) {
         source.buffer = model.data;
         source.connect(context.destination);
         model.source = source;
-        dispatch('read-complete');
+        dispatch('calculate-cutting-points');
       });
 
     };
     reader.readAsArrayBuffer(data);
-  } else if(type === 'read-complete') {
-    model.cuttingPoints = logic.cuttingPoints(model.data.getChannelData(0));
+  } else if(type === 'calculate-cutting-points') {
+    model.originalCuttingPoints = logic.cuttingPoints(model.data.getChannelData(0));
+    model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
     console.log(model.cuttingPoints.length);
   } else if(type === 'play') {
     var index = data;
@@ -118,31 +110,29 @@ function update(type, data) {
     }
   } else if(type === 'stop') {
     stop();
-  } else if(type === 'delete') {
-    var index = data;
-    if(model.playingPosition) {
-      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
-      if(inThisRange) {
-        stop();
+  } else if(type === 'undo') {
+    if(model.actionCursor >= 0) {
+      model.actionCursor--;
+      model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
+      for(var i = 0; i <= model.actionCursor; i++) {
+        edit(model.actions[i][0], model.actions[i][1]);
       }
+      dispatch();
     }
-    model.cuttingPoints.splice(index, 1);
-  } else if(type === 'up') {
-    var index = data;
-    if(model.playingPosition) {
-      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-      var inPrevRange = model.cuttingPoints[index-1][0] <= currentPosition && currentPosition < model.cuttingPoints[index-1][1];
-      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
-      if(inPrevRange) {
-        model.playingPosition[1] = model.cuttingPoints[index][1];
-      } else if(inThisRange) {
-        model.playingPosition[0] = model.cuttingPoints[index-1][0];
-        model.startTime -= (model.cuttingPoints[index-1][1] - model.cuttingPoints[index-1][0]) / model.data.sampleRate * 1000;
+  } else if(type === 'redo') {
+    if(model.actionCursor < model.actions.length -1) {
+      model.actionCursor++;
+      model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
+      for(var i = 0; i <= model.actionCursor; i++) {
+        edit(model.actions[i][0], model.actions[i][1]);
       }
+      dispatch();
     }
-    model.cuttingPoints[index-1][1] = model.cuttingPoints[index][1];
-    model.cuttingPoints.splice(index, 1);
+  } else if(type === 'delete' || type === 'up') {
+    edit(type, data);
+    model.actions.length = model.actionCursor + 1;
+    model.actions.push([type, data]);
+    model.actionCursor = model.actions.length - 1;
   } else if(type === 'hover') {
     model.hover = data;
   } else if(type === 'create-button') {
@@ -177,6 +167,34 @@ function update(type, data) {
 
   }
 }
+function edit(type, data) {
+  if(type === 'delete') {
+    var index = data;
+    if(model.playingPosition) {
+      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
+      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
+      if(inThisRange) {
+        stop();
+      }
+    }
+    model.cuttingPoints.splice(index, 1);
+  } else if(type === 'up') {
+    var index = data;
+    if(model.playingPosition) {
+      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
+      var inPrevRange = model.cuttingPoints[index-1][0] <= currentPosition && currentPosition < model.cuttingPoints[index-1][1];
+      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
+      if(inPrevRange) {
+        model.playingPosition[1] = model.cuttingPoints[index][1];
+      } else if(inThisRange) {
+        model.playingPosition[0] = model.cuttingPoints[index-1][0];
+        model.startTime -= (model.cuttingPoints[index-1][1] - model.cuttingPoints[index-1][0]) / model.data.sampleRate * 1000;
+      }
+    }
+    model.cuttingPoints[index-1][1] = model.cuttingPoints[index][1];
+    model.cuttingPoints.splice(index, 1);
+  }
+}
 function stop() {
   model.source.stop();
   var source = model.audioContext.createBufferSource();
@@ -186,158 +204,177 @@ function stop() {
   model.playingPosition = null;
   model.startTime = null;
 }
+
 function render() {
-  renderWaves();
+  return h('div#container.container', [
+    h('label.btn.btn-default', {props:{for:'read'}, on: {
+      change: function(e) {
+        var file = e.target.files[0];
+        dispatch('read-button', file);
+      }
+    }}, [
+      h('span', ['Select .mp3 file']),
+      h('input#read.read', {props:{type:'file'}})
+    ]),
+    h('button#create.btn.btn-primary', {
+      on: {
+        click: function() {
+          dispatch('create-button');
+        }
+      }
+    }, ['Create']),
+    h('div#canvas-container', renderWaves())
+  ]);
 }
 function renderWaves() {
-  // console.log('renderWaves');
-  var container = document.getElementById('canvas-container');
   if(!model.data) {
-    return;
+    return [];
   }
   var waves = [];
   model.cuttingPoints.forEach(function(point, i) {
     waves.push(renderWave(point, i));
   });
-  if(model.actions[0][0] !== 'hover' && model.actions[0][0] !== 'tick') {
-    R(container, waves);
-  }
+  return waves;
 }
 function renderWave(point, index) {
   var height = 40;
   var width = (point[1] - point[0]) / model.data.sampleRate * 10;
-  var div;
-  if(model.actions[0][0] === 'hover' || model.actions[0][0] === 'tick') {
-    div = Q('.wave-area')[index];
-  } else {
-    var deleteButton = E('span', {
-      'class': 'wave-area-button wave-area-delete btn btn-danger glyphicon glyphicon-remove',
-      'data-index': index,
-    });
-    var upMergeButton = E('span', {
-      'class': 'wave-area-button wave-area-up btn btn-default glyphicon glyphicon-arrow-up',
-      'data-index': index,
-    });
-    var playIconClass = 'glyphicon-play';
-    if(model.playingPosition) {
-      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
-      if(inThisRange) {
-        console.log(index);
-         playIconClass = 'glyphicon-pause';
+  var deleteButton = h('span.wave-area-button.wave-area-delete.btn.btn-danger.glyphicon.glyphicon-remove', {
+    on: {
+      click: function(e) {
+        dispatch('delete', index);
       }
     }
-    var playButton = E('span', {
-      'class': 'wave-area-button wave-area-play btn btn-default glyphicon ' + playIconClass,
-      'data-index': index,
-    });
-    var layer0 = E('canvas', {
-      'data-index': index,
-      'width': width,
-      'height': height
-    });
-    var layer1 = E('canvas', {
-      'data-index': index,
-      'width': width,
-      'height': height
-    });
-    div = E('div', {
-      'class': 'wave-area'
-    }, [layer0, layer1, deleteButton, upMergeButton, playButton]);
+  });
+  var upMergeButton = index > 0 ? h('span.wave-area-button.wave-area-up.btn.btn-default.glyphicon.glyphicon-arrow-up', {
+    on: {
+      click: function(e) {
+        dispatch('up', index);
+      }
+    }
+  }) : h('span.wave-area-button.wave-area-up.btn.btn-default.glyphicon.glyphicon-ban-circle');
+  var playIconClass = 'glyphicon-play';
+  if(model.playingPosition) {
+    var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
+    var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
+    if(inThisRange) {
+      playIconClass = 'glyphicon-pause';
+    }
   }
-  var canvases = div.querySelectorAll('canvas');
-
-  renderWaveOnCanvas(canvases, width, height, point, index);
+  var playButton = h('span.wave-area-button.wave-area-play.btn.btn-default.glyphicon.' + playIconClass, {
+    on: {
+      click: function(e) {
+        dispatch('play', index);
+      }
+    }
+  });
+  var layer0 = h('canvas', {
+    props: {
+      'data-index': index,
+      'width': width,
+      'height': height,
+    },
+    hook: {
+      create: function(_, vnode) {
+        renderWaveOnCanvas0(vnode.elm, width, height, point, index);
+      },
+      update: function(oldVnode, vnode) {
+        if(oldVnode.data.props.width !== vnode.data.props.width) {
+          renderWaveOnCanvas0(vnode.elm, width, height, point, index);
+        }
+      }
+    }
+  });
+  var layer1 = h('canvas', {
+    props: {
+      'width': width,
+      'height': height,
+    },
+    on: {
+      mousemove: function(e) {
+        dispatch('hover', [index, e.layerX]);
+      }
+    },
+    hook: {
+      postpatch: function(oldVnode, vnode) {
+        renderWaveOnCanvas1(vnode.elm, width, height, point, index);
+      }
+    }
+  });
+  var div = h('div.wave-area', [layer0, layer1, deleteButton, upMergeButton, playButton]);
   return div;
 }
-function renderWaveOnCanvas(canvases, width, height, point, index) {
-  var layer0 = canvases[0];
-  var layer1 = canvases[1];
-  if(model.actions[0][0] === 'hover' || model.actions[0][0] === 'tick') {
-    var ctx = layer1.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
-    if(model.hover) {
-      var hoverIndex = model.hover[0];
-      var hoverLeft = model.hover[1];
-      if(hoverIndex === index) {
-        ctx.strokeStyle = '#fff';
-        ctx.beginPath();
-        ctx.moveTo(hoverLeft+0.5, height);
-        ctx.lineTo(hoverLeft+0.5, 0);
-        ctx.closePath();
-        ctx.stroke();
-      }
-    }
-    if(model.playingPosition) {
-      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition <= model.cuttingPoints[index][1];
-      if(inThisRange) {
-        var pos = (model.currentTime - model.startTime) / 1000 * 10;
-        ctx.strokeStyle = '#adf';
-        ctx.beginPath();
-        ctx.moveTo(pos+0.5, height);
-        ctx.lineTo(pos+0.5, 0);
-        ctx.closePath();
-        ctx.stroke();
-      }
-    }
-  } else {
-    var ctx = layer0.getContext('2d');
-    ctx.fillStyle = '#333';
-    ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = '#afd';
-    var data = model.data.getChannelData(0)
-    for(var i = 0; i < width; i++) {
-      var pos = point[0] + Math.floor((point[1] - point[0]) * (i / width));
-      var value = Math.abs(data[pos]);
+function renderWaveOnCanvas0(layer0, width, height, point, index) {
+  var ctx = layer0.getContext('2d');
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = '#afd';
+  var data = model.data.getChannelData(0)
+  for(var i = 0; i < width; i++) {
+    var pos = point[0] + Math.floor((point[1] - point[0]) * (i / width));
+    var value = Math.abs(data[pos]);
+    ctx.beginPath();
+    ctx.moveTo(i+0.5, height);
+    ctx.lineTo(i+0.5, height - height * value * 2);
+    ctx.closePath();
+    ctx.stroke();
+  }
+}
+function renderWaveOnCanvas1(layer1, width, height, point, index) {
+  var ctx = layer1.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
+  if(model.hover) {
+    var hoverIndex = model.hover[0];
+    var hoverLeft = model.hover[1];
+    if(hoverIndex === index) {
+      ctx.strokeStyle = '#fff';
       ctx.beginPath();
-      ctx.moveTo(i+0.5, height);
-      ctx.lineTo(i+0.5, height - height * value * 2);
+      ctx.moveTo(hoverLeft+0.5, height);
+      ctx.lineTo(hoverLeft+0.5, 0);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+  if(model.playingPosition) {
+    var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
+    var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition <= model.cuttingPoints[index][1];
+    if(inThisRange) {
+      var pos = (model.currentTime - model.startTime) / 1000 * 10;
+      ctx.strokeStyle = '#adf';
+      ctx.beginPath();
+      ctx.moveTo(pos+0.5, height);
+      ctx.lineTo(pos+0.5, 0);
       ctx.closePath();
       ctx.stroke();
     }
   }
 }
 var requestRendering = 0;
+var container = document.getElementById('container');
+var old = container;
+
 function dispatch(type, data) {
   // console.log(type);
-  setTimeout(function(){
-    model.actions.unshift([type, data]);
+  setTimeout(function() {
     update(type, data);
-    // requestRendering++;
-
-    render();
-  });
-
-}
-// (function loop() {
-//   if(requestRendering) {
-//     requestRendering = 0;
-//     render();
-//   }
-//   requestAnimationFrame(loop);
-// })();
-$document = Gator(document);
-function listenToEvents() {
-  $document.on('change', '#read', function(e) {
-    var file = e.target.files[0];
-    dispatch('read-button', file);
-  }, false);
-  $document.on('click', '#create', function(e) {
-    dispatch('create-button');
-  });
-  $document.on('click', '.wave-area-play', function(e) {
-    dispatch('play', +this.getAttribute('data-index'));
-  });
-  $document.on('click', '.wave-area-delete', function(e) {
-    dispatch('delete', +this.getAttribute('data-index'));
-  });
-  $document.on('click', '.wave-area-up', function(e) {
-    dispatch('up', +this.getAttribute('data-index'));
-  });
-  $document.on('mousemove', '.wave-area canvas', function(e) {
-    dispatch('hover', [+this.getAttribute('data-index'), e.layerX]);
+    requestRendering++;
   });
 }
-listenToEvents();
+(function loop() {
+  if(requestRendering) {
+    // console.log(requestRendering);
+    requestRendering = 0;
+    var vnode = render();
+    patch(old, vnode);
+    old = vnode;
+  }
+  requestAnimationFrame(loop);
+})();
+document.onkeydown = function (e) {
+  if(e.keyCode === 90 && e.ctrlKey) {
+    dispatch('undo');
+  } else if(e.keyCode === 89 && e.ctrlKey) {
+    dispatch('redo');
+  }
+};
 dispatch('init');
