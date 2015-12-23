@@ -1,0 +1,24 @@
+
+input[type=file].read {
+  display: none;
+}
+
+.wave-area {
+  height: 40px;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  position: relative;
+  /*background-color: #eee;*/
+}
+
+.wave-area canvas {
+  position: absolute;
+  top: 0;
+  left: 140px;
+}
+
+.wave-area .wave-area-button {
+  display: inline-block;
+  border-radius: 50%;
+  margin-left: 3px;
+}

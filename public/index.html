@@ -1,0 +1,29 @@
+<head>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+  <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script> -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">Wave Cutter for TOEIC</a>
+      </div>
+    </div>
+  </nav>
+  <div id="container" class="container">
+    <label for="read" class="btn btn-default">
+      <span>Select .mp3 file</span>
+      <input type="file" id="read" class="read"></input>
+    </label>
+    <button id="create" class="btn btn-primary">Create</button>
+    <div id="canvas-container">
+    </div>
+  </div>
+
+  <script src="gator.min.js"></script>
+  <script src="lame.min.js"></script>
+  <script src="app.js"></script>
+  <script src="zip.js"></script>
+</body>
