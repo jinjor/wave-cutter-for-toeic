@@ -1,6 +1,6 @@
 var gulp = require('gulp');
 var browserify = require('gulp-browserify');
-var gls = require('gulp-live-server');
+var webserver = require('gulp-webserver');
 
 gulp.task('build', function() {
 	gulp.src('./src/*.js')
@@ -8,11 +8,17 @@ gulp.task('build', function() {
 		  insertGlobals : true,
 		  debug : !gulp.env.production
 		}))
-		.pipe(gulp.dest('./public'))
+		.pipe(gulp.dest('./assets'))
 });
 gulp.task('watch', function() {
-  var server = gls.new('server.js');
-  server.start();
-  gulp.watch('./src/*.js', ['build']);
+	gulp.src('.')
+    .pipe(webserver({
+			fallback: 'index.html',
+			port: 3000,
+      livereload: true,
+      directoryListing: true,
+      open: true
+    }));
+	gulp.watch('./src/*.js', ['build']);
 });
 gulp.task('default', ['build']);

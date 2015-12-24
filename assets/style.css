@@ -1,0 +1,122 @@
+@media (min-width: 992px) {
+  .container {
+    width: 750px;
+  }
+}
+.navbar {
+  border-radius: 0;
+}
+.navbar-brand {
+  font-weight: bold;
+}
+.btn {
+  border-radius: 0;
+}
+
+.loading {
+    height: 50px;
+    position: relative;
+}
+.loading .loading-bar {
+    height: 20px;
+    width: 18px;
+    position:absolute;
+    bottom: 0;
+    background-color: #597;
+    -webkit-animation: animation5-bar linear 1s infinite;
+    animation: animation5-bar linear 1s  infinite;
+}
+.loading .loading-bar1 {
+  left: 0;
+  -webkit-animation-delay: 0.2s;
+  animation-delay: 0.2s;
+}
+.loading .loading-bar2 {
+  left: 20px;
+  -webkit-animation-delay: 0.6s;
+  animation-delay: 0.6s;
+}
+.loading .loading-bar3 {
+  left: 40px;
+  -webkit-animation-delay: 0s;
+  animation-delay: 0s;
+}
+.loading .loading-bar4 {
+  left: 60px;
+  -webkit-animation-delay: 0.4s;
+  animation-delay: 0.4s;
+}
+.loading .loading-bar5 {
+  left: 80px;
+  -webkit-animation-delay: 0.8s;
+  animation-delay: 0.8s;
+}
+@keyframes animation5-bar {
+    50% {
+      height:50px;
+    }
+}
+
+#share-buttons {
+  margin-top: 10px;
+}
+#share-buttons img {
+  width: 30px;
+}
+#share-buttons a {
+  padding: 5px;
+  margin-left: 5px;
+}
+
+.controls {
+  margin-bottom: 15px;
+  display: flex;
+  position: relative;
+}
+.controls > * {
+  margin-right: 10px;
+}
+.controls .btn {
+  display: block;
+}
+.wave-count {
+  position: absolute;
+  right: 0;
+  color: #aaa;
+  font-weight: bold;
+}
+.wave-count-number {
+  font-size: 2em;
+  margin-right: 2px;
+}
+.next-step {
+  border-top: 17px solid transparent;
+  border-bottom: 17px solid transparent;
+  border-left: 15px solid #ddd;
+}
+input[type=file].read {
+  display: none;
+}
+
+.wave-area {
+  height: 40px;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  position: relative;
+  /*background-color: #eee;*/
+}
+
+.wave-area canvas {
+  position: absolute;
+  top: 0;
+  left: 130px;
+}
+
+.wave-area .wave-area-button {
+  display: inline-block;
+  border-radius: 50%;
+  margin-right: 3px;
+}
+.wave-area-button.wave-area-cut {
+  margin-top: -34px;
+}

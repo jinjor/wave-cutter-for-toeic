@@ -54,16 +54,24 @@ function update(type, data) {
       var context = model.audioContext;
       console.log('decoding...');
       context.decodeAudioData(e.target.result, function(decodedData) {
-        model.data = decodedData;
-        var source = context.createBufferSource();
-        source.buffer = model.data;
-        source.connect(context.destination);
-        model.source = source;
+        model.data = decodedData.getChannelData(0);
+        model.sampleRate = decodedData.sampleRate;
         dispatch('calculate-cutting-points');
       });
     };
     reader.readAsArrayBuffer(data);
+    model.loading = true;
   } else if(type === 'calculate-cutting-points') {
+    var context = model.audioContext;
+    var buf = context.createBuffer(1, model.data.length, model.sampleRate);
+    buf.copyToChannel(model.data, 0, 0);
+    model.data = buf;
+    var source = context.createBufferSource();
+    source.buffer = model.data;
+    source.connect(context.destination);
+    model.source = source;
+    //
+    model.loading = false;
     model.originalCuttingPoints = logic.cuttingPoints(model.data.getChannelData(0), 60000);
     model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
   } else if(type === 'play') {
@@ -153,32 +161,38 @@ function update(type, data) {
   } else if(type === 'create-button') {
     var zip = new JSZip();
     var count = 0;
-    logic.cut(model.data.getChannelData(0), model.cuttingPoints, function(buf, i) {
-      var samples = new Int16Array(buf.length);
-      for(var j = 0; j < buf.length; j++) {
-        samples[j] = Math.floor(buf[j] * 32767);
-      }
-      var blob = encodeMp3(samples/*Int16Array*/, 1, model.data.sampleRate, 128);
-      var fileName = i + '.mp3';
-      var reader = new FileReader();
-      reader.onload = function() {
-          zip.file(fileName, reader.result, {binary:true});
-          count++;
-          if(count === model.cuttingPoints.length) {
-            console.log(zip);
-            var content = zip.generate({type : "blob"});
-            logic.createFile('all.zip', content, function(e, file) {
-              if(e) {
-              } else {
-                var url = file.toURL();
-                console.log(url);
-                location.href = url;
-              }
-            });
-          }
-      };
-      reader.readAsArrayBuffer(blob);
+    requestIdleCallback(function() {
+      logic.cut(model.data.getChannelData(0), model.cuttingPoints, function(buf, i) {
+        var samples = new Int16Array(buf.length);
+        for(var j = 0; j < buf.length; j++) {
+          samples[j] = Math.floor(buf[j] * 32767);
+        }
+        var blob = encodeMp3(samples/*Int16Array*/, 1, model.data.sampleRate, 128);
+        var fileName = i + '.mp3';
+        var reader = new FileReader();
+        reader.onload = function() {
+            zip.file(fileName, reader.result, {binary:true});
+            count++;
+            if(count === model.cuttingPoints.length) {
+              console.log(zip);
+              var content = zip.generate({type : "blob"});
+              logic.createFile('all.zip', content, function(e, file) {
+                if(e) {
+                } else {
+                  var url = file.toURL();
+                  console.log(url);
+                  location.href = url;
+                  dispatch('save-done');
+                }
+              });
+            }
+        };
+        reader.readAsArrayBuffer(blob);
+      });
     });
+    model.saving = true;
+  } else if(type === 'save-done') {
+    model.saving = false;
   }
 }
 function edit(type, data) {
@@ -229,10 +243,20 @@ function stop() {
 }
 
 function render() {
+  var main = model.saving ? renderLoading('Now compressing waves...') : model.loading ? renderLoading('Now loading and processing...') : renderWaves();
   return h('div#container.container', [
     renderControls(),
-    h('div#canvas-container', renderWaves())
+    h('div#canvas-container', main)
   ]);
+}
+function renderLoading(message) {
+  return [h('div.loading', [
+    h('div.loading-bar.loading-bar1'),
+    h('div.loading-bar.loading-bar2'),
+    h('div.loading-bar.loading-bar3'),
+    h('div.loading-bar.loading-bar4'),
+    h('div.loading-bar.loading-bar5')
+  ]), h('div.loading-message', [message])];
 }
 function renderControls() {
   var step = model.cuttingPoints ? 1 : 0;
