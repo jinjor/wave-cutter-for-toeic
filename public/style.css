@@ -1,4 +1,31 @@
 
+.controls {
+  margin-bottom: 15px;
+  display: flex;
+  position: relative;
+}
+.controls > * {
+  margin-right: 10px;
+}
+.controls .btn {
+  border-radius: 0;
+  display: block;
+}
+.wave-count {
+  position: absolute;
+  right: 0;
+  color: #aaa;
+  font-weight: bold;
+}
+.wave-count-number {
+  font-size: 2em;
+  margin-right: 2px;
+}
+.next-step {
+  border-top: 17px solid transparent;
+  border-bottom: 17px solid transparent;
+  border-left: 15px solid #ddd;
+}
 input[type=file].read {
   display: none;
 }
@@ -14,11 +41,14 @@ input[type=file].read {
 .wave-area canvas {
   position: absolute;
   top: 0;
-  left: 140px;
+  left: 130px;
 }
 
 .wave-area .wave-area-button {
   display: inline-block;
   border-radius: 50%;
-  margin-left: 3px;
+  margin-right: 3px;
+}
+.wave-area-button.wave-area-cut {
+  margin-top: -34px;
 }

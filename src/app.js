@@ -2,13 +2,13 @@ var logic = require('./logic.js');
 var async = require('async');
 var JSZip = require("jszip");
 var snabbdom = require('snabbdom');
-var patch = snabbdom.init([ // Init patch function with choosen modules
-  require('snabbdom/modules/class'), // makes it easy to toggle classes
-  require('snabbdom/modules/props'), // for setting properties on DOM elements
-  require('snabbdom/modules/style'), // handles styling on elements with support for animations
-  require('snabbdom/modules/eventlisteners'), // attaches event listeners
+var patch = snabbdom.init([
+  require('snabbdom/modules/class'),
+  require('snabbdom/modules/props'),
+  require('snabbdom/modules/style'),
+  require('snabbdom/modules/eventlisteners'),
 ]);
-var h = require('snabbdom/h'); // helper function for creating VNodes
+var h = require('snabbdom/h');
 
 function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps) {
   var lib = new lamejs();
@@ -29,11 +29,7 @@ function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps) {
   if (mp3buf.length > 0) {
       mp3Data.push(new Int8Array(mp3buf));
   }
-
   var blob = new Blob(mp3Data, {type: 'audio/mp3'});
-
-  var url = window.URL.createObjectURL(blob);
-  console.log('MP3 URl: ', url);
   return blob;
 }
 
@@ -44,10 +40,12 @@ var model = {
   playingPosition: null,
   startTime: null,
   hover: null,
+  toBeCut: null,
   audioContext: new AudioContext()
 };
 
 function update(type, data) {
+
   if(type === 'init') {
 
   } else if(type === 'read-button') {
@@ -63,13 +61,11 @@ function update(type, data) {
         model.source = source;
         dispatch('calculate-cutting-points');
       });
-
     };
     reader.readAsArrayBuffer(data);
   } else if(type === 'calculate-cutting-points') {
-    model.originalCuttingPoints = logic.cuttingPoints(model.data.getChannelData(0));
+    model.originalCuttingPoints = logic.cuttingPoints(model.data.getChannelData(0), 60000);
     model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
-    console.log(model.cuttingPoints.length);
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
@@ -94,6 +90,25 @@ function update(type, data) {
     if(!playing) {
       dispatch('tick');
     }
+  } else if(type === 'click-canvas') {
+    var index = data[0];
+    var canvasLeft = data[1];
+    var canvasWidth = data[2];
+    var dataLength = model.cuttingPoints[index][1] - model.cuttingPoints[index][0];
+    var dataIndex = dataLength * (canvasLeft / canvasWidth);
+
+    var points = logic.cuttingPoints(model.data.getChannelData(0), 20000,
+      model.cuttingPoints[index][0], model.cuttingPoints[index][1]);
+    var minLag = Infinity;
+    var nearest = null;
+    points.forEach(function(point) {
+      var lag = Math.abs(point[0] - (dataIndex + model.cuttingPoints[index][0]));
+      if(lag < minLag) {
+        minLag = lag;
+        nearest = point[0];
+      }
+    });
+    model.toBeCut = nearest;
   } else if(type === 'tick') {
     model.currentTime = new Date().getTime();
     if(model.playingPosition !== null) {
@@ -128,7 +143,7 @@ function update(type, data) {
       }
       dispatch();
     }
-  } else if(type === 'delete' || type === 'up') {
+  } else if(type === 'delete' || type === 'up' || type === 'cut') {
     edit(type, data);
     model.actions.length = model.actionCursor + 1;
     model.actions.push([type, data]);
@@ -164,7 +179,6 @@ function update(type, data) {
       };
       reader.readAsArrayBuffer(blob);
     });
-
   }
 }
 function edit(type, data) {
@@ -193,6 +207,15 @@ function edit(type, data) {
     }
     model.cuttingPoints[index-1][1] = model.cuttingPoints[index][1];
     model.cuttingPoints.splice(index, 1);
+  } else if(type === 'cut') {
+    var toBeCut = data;
+    for(var i = model.cuttingPoints.length - 1; i >= 0; i--) {
+      var points = model.cuttingPoints[i];
+      if(points[0] <= toBeCut && toBeCut < points[1]) {
+        model.cuttingPoints.splice(i + 1, 0, [toBeCut, points[1]]);
+        model.cuttingPoints[i][1] = toBeCut - 1;
+      }
+    }
   }
 }
 function stop() {
@@ -207,24 +230,39 @@ function stop() {
 
 function render() {
   return h('div#container.container', [
-    h('label.btn.btn-default', {props:{for:'read'}, on: {
+    renderControls(),
+    h('div#canvas-container', renderWaves())
+  ]);
+}
+function renderControls() {
+  var step = model.cuttingPoints ? 1 : 0;
+  var children = [h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
+    props:{for:'read'},
+    on: {
       change: function(e) {
         var file = e.target.files[0];
         dispatch('read-button', file);
       }
-    }}, [
-      h('span', ['Select .mp3 file']),
-      h('input#read.read', {props:{type:'file'}})
-    ]),
-    h('button#create.btn.btn-primary', {
+    }
+  }, [
+    h('span', ['Choose file']),
+    h('input#read.read', {props:{type:'file'}})
+  ])];
+  if(model.cuttingPoints) {
+    children.push(h('button#create.btn.btn-' + (step === 1 ? 'primary' : 'default'), {
       on: {
         click: function() {
           dispatch('create-button');
         }
       }
-    }, ['Create']),
-    h('div#canvas-container', renderWaves())
-  ]);
+    }, ['Save']));
+    var count = h('div.wave-count', [
+      h('span.wave-count-number', [model.cuttingPoints.length]),
+      h('span', ['waves'])
+    ]);
+    children.push(count);
+  }
+  return h('div.controls', children);
 }
 function renderWaves() {
   if(!model.data) {
@@ -237,7 +275,7 @@ function renderWaves() {
   return waves;
 }
 function renderWave(point, index) {
-  var height = 40;
+  var height = 34;
   var width = (point[1] - point[0]) / model.data.sampleRate * 10;
   var deleteButton = h('span.wave-area-button.wave-area-delete.btn.btn-danger.glyphicon.glyphicon-remove', {
     on: {
@@ -293,6 +331,9 @@ function renderWave(point, index) {
     on: {
       mousemove: function(e) {
         dispatch('hover', [index, e.layerX]);
+      },
+      click: function(e) {
+        dispatch('click-canvas', [index, e.layerX, width]);
       }
     },
     hook: {
@@ -301,7 +342,23 @@ function renderWave(point, index) {
       }
     }
   });
-  var div = h('div.wave-area', [layer0, layer1, deleteButton, upMergeButton, playButton]);
+  var children =  [layer0, layer1, deleteButton, upMergeButton, playButton]
+  if(model.toBeCut && model.cuttingPoints[index][0] < model.toBeCut &&
+      model.toBeCut < model.cuttingPoints[index][1]) {
+    var left = width * ((model.toBeCut - model.cuttingPoints[index][0]) / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
+    var cutHelper = h('span.wave-area-button.wave-area-cut.btn.btn-default.glyphicon.glyphicon-arrow-down', {
+      style: {
+        'margin-left': (left - 19) + 'px'
+      },
+      on: {
+        click: function(e) {
+          dispatch('cut', model.toBeCut);
+        }
+      }
+    });
+    children.push(cutHelper);
+  }
+  var div = h('div.wave-area', children);
   return div;
 }
 function renderWaveOnCanvas0(layer0, width, height, point, index) {
@@ -323,14 +380,14 @@ function renderWaveOnCanvas0(layer0, width, height, point, index) {
 function renderWaveOnCanvas1(layer1, width, height, point, index) {
   var ctx = layer1.getContext('2d');
   ctx.clearRect(0, 0, width, height);
-  if(model.hover) {
-    var hoverIndex = model.hover[0];
-    var hoverLeft = model.hover[1];
-    if(hoverIndex === index) {
+  if(model.toBeCut) {
+    if(model.cuttingPoints[index][0] <= model.toBeCut &&
+      model.toBeCut < model.cuttingPoints[index][1]) {
+      var left = width * ((model.toBeCut - model.cuttingPoints[index][0]) / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
       ctx.strokeStyle = '#fff';
       ctx.beginPath();
-      ctx.moveTo(hoverLeft+0.5, height);
-      ctx.lineTo(hoverLeft+0.5, 0);
+      ctx.moveTo(left+0.5, height);
+      ctx.lineTo(left+0.5, 0);
       ctx.closePath();
       ctx.stroke();
     }
@@ -371,7 +428,9 @@ function dispatch(type, data) {
   requestAnimationFrame(loop);
 })();
 document.onkeydown = function (e) {
-  if(e.keyCode === 90 && e.ctrlKey) {
+  if(e.keyCode === 90 && e.ctrlKey && e.shiftKey) {
+    dispatch('redo');
+  } else if(e.keyCode === 90 && e.ctrlKey) {
     dispatch('undo');
   } else if(e.keyCode === 89 && e.ctrlKey) {
     dispatch('redo');

@@ -53,18 +53,20 @@ function toMonoral(data) {
   }
   return monoral;
 }
-function cuttingPoints(data) {
+function cuttingPoints(data, lengthThreshold, seekStart, seekEnd) {
+  seekStart = seekStart || 0;
+  seekEnd = seekEnd || data.length;
   var points = [];
   var threshold = 0.01;
-  var start = 0;
+  var start = seekStart;
   var silentLength = 0;
 
-  for(i = 0; i < data.length; i++) {
+  for(i = seekStart; i < seekEnd; i++) {
     var l = data[i];
     if(Math.abs(l) < threshold) {
       silentLength++;
     } else {
-      if(silentLength > 60000) {
+      if(silentLength > lengthThreshold) {
         points.push([start, i-1]);
         start = i-1;
       }
