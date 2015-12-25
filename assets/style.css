@@ -1,3 +1,14 @@
+
+[class^="icon-"], [class*=" icon-"] {
+  position: relative;
+  font-family: inherit !important;
+}
+[class^="icon-"]:before, [class*=" icon-"]:before {
+  font-family: 'icomoon' !important;
+}
+.btn[class^="icon-"], .btn[class*=" icon-"] {
+  padding: 10px 12px;
+}
 @media (min-width: 992px) {
   .container {
     width: 750px;
@@ -6,13 +17,29 @@
 .navbar {
   border-radius: 0;
 }
+.navbar a:active, .navbar a:hover, .navbar a:focus {
+  text-decoration: none;
+}
 .navbar-brand {
   font-weight: bold;
+}
+.icon-github {
+  margin-top: 4px;
+  color: #777;
+  margin-right: 44px;
+}
+.icon-github::before {
+  font-size: 28px;
+  position: relative;
+  top: 7px;
+  margin-right: 4px;
 }
 .btn {
   border-radius: 0;
 }
-
+.btn[disabled] {
+  cursor: inherit;
+}
 .loading {
     height: 50px;
     position: relative;
@@ -119,4 +146,6 @@ input[type=file].read {
 }
 .wave-area-button.wave-area-cut {
   margin-top: -34px;
+  transform: rotateX(180deg);
+  font-weight: bold;
 }

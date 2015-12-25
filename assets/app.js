@@ -13024,13 +13024,35 @@ function renderControls() {
     h('input#read.read', {props:{type:'file'}})
   ])];
   if(model.cuttingPoints) {
-    children.push(h('button#create.btn.btn-' + (step === 1 ? 'primary' : 'default'), {
+    children.push(h('button.btn.btn-' + (step === 1 ? 'primary' : 'default'), {
       on: {
         click: function() {
           dispatch('create-button');
         }
       }
     }, ['Save']));
+    children.push(h('button.btn.btn-default.icon-undo', {
+      props: {
+        disabled: model.actionCursor < 0
+      },
+      on: {
+        click: function() {
+          dispatch('undo');
+        }
+      }
+    }));
+    children.push(h('button.btn.btn-default.icon-redo', {
+      props: {
+        disabled: model.actionCursor >= model.actions.length - 1
+      },
+      on: {
+        click: function() {
+          dispatch('redo');
+        }
+      }
+    }));
+
+
     var count = h('div.wave-count', [
       h('span.wave-count-number', [model.cuttingPoints.length]),
       h('span', ['waves'])
@@ -13065,7 +13087,7 @@ function renderWave(point, index) {
         dispatch('up', index);
       }
     }
-  }) : h('span.wave-area-button.wave-area-up.btn.btn-default.glyphicon.glyphicon-ban-circle');
+  }) : h('span.wave-area-button.wave-area-up.btn.btn-default.icon-smile');
   var playIconClass = 'glyphicon-play';
   if(model.playingPosition) {
     var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
@@ -13121,7 +13143,7 @@ function renderWave(point, index) {
   if(model.toBeCut && model.cuttingPoints[index][0] < model.toBeCut &&
       model.toBeCut < model.cuttingPoints[index][1]) {
     var left = width * ((model.toBeCut - model.cuttingPoints[index][0]) / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
-    var cutHelper = h('span.wave-area-button.wave-area-cut.btn.btn-default.glyphicon.glyphicon-arrow-down', {
+    var cutHelper = h('span.wave-area-button.wave-area-cut.btn.btn-default.icon-scissors', {
       style: {
         'margin-left': (left - 19) + 'px'
       },
