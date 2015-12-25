@@ -1,4 +1,4 @@
-importScripts('/assets/lame.min.js');
+importScripts('./assets/lame.min.js');
 
 self.addEventListener('message', function(e) {
   var samples = e.data.samples;
