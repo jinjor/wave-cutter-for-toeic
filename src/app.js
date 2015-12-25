@@ -11,7 +11,7 @@ var patch = snabbdom.init([
 var h = require('snabbdom/h');
 
 function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps, cb) {
-  var lameWorker = new Worker('/assets/lame-work.js');
+  var lameWorker = new Worker('./assets/lame-work.js');
   lameWorker.addEventListener('message', function(e) {
     cb(null, e.data);
   }, false);
