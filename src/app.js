@@ -10,27 +10,17 @@ var patch = snabbdom.init([
 ]);
 var h = require('snabbdom/h');
 
-function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps) {
-  var lib = new lamejs();
-  var mp3encoder = new lib.Mp3Encoder(channels, sampleRate, kbps);
-  var mp3Data = [];
-  var sampleBlockSize = 1152; //multiple of 576
-
-  var mp3Data = [];
-  for (var i = 0; i < samples.length; i += sampleBlockSize) {
-    sampleChunk = samples.subarray(i, i + sampleBlockSize);
-    var mp3buf = mp3encoder.encodeBuffer(sampleChunk);
-    if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf);
-    }
-  }
-  var mp3buf = mp3encoder.flush();   //finish writing mp3
-
-  if (mp3buf.length > 0) {
-      mp3Data.push(new Int8Array(mp3buf));
-  }
-  var blob = new Blob(mp3Data, {type: 'audio/mp3'});
-  return blob;
+function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps, cb) {
+  var lameWorker = new Worker('/assets/lame-work.js');
+  lameWorker.addEventListener('message', function(e) {
+    cb(null, e.data);
+  }, false);
+  lameWorker.postMessage({
+    samples: samples,
+    channels: channels,
+    sampleRate: sampleRate,
+    kbps: kbps
+  });
 }
 
 var model = {
@@ -160,36 +150,40 @@ function update(type, data) {
     model.hover = data;
   } else if(type === 'create-button') {
     var zip = new JSZip();
-    var count = 0;
-    requestIdleCallback(function() {
-      logic.cut(model.data.getChannelData(0), model.cuttingPoints, function(buf, i) {
+
+    var data = model.data.getChannelData(0);
+    var functions = model.cuttingPoints.map(function(point, i) {
+      return function(cb) {
+        var buf = data.slice(point[0], point[1]);
         var samples = new Int16Array(buf.length);
         for(var j = 0; j < buf.length; j++) {
           samples[j] = Math.floor(buf[j] * 32767);
         }
-        var blob = encodeMp3(samples/*Int16Array*/, 1, model.data.sampleRate, 128);
-        var fileName = i + '.mp3';
-        var reader = new FileReader();
-        reader.onload = function() {
+        encodeMp3(samples/*Int16Array*/, 1, model.data.sampleRate, 128, function(e, blob) {
+          var fileName = i + '.mp3';
+          var reader = new FileReader();
+          reader.onload = function() {
             zip.file(fileName, reader.result, {binary:true});
-            count++;
-            if(count === model.cuttingPoints.length) {
-              console.log(zip);
-              var content = zip.generate({type : "blob"});
-              logic.createFile('all.zip', content, function(e, file) {
-                if(e) {
-                } else {
-                  var url = file.toURL();
-                  console.log(url);
-                  location.href = url;
-                  dispatch('save-done');
-                }
-              });
-            }
-        };
-        reader.readAsArrayBuffer(blob);
+            cb();
+          };
+          reader.readAsArrayBuffer(blob);
+        });
+
+      };
+    });
+    async.series(functions, function(e) {
+      var content = zip.generate({type : "blob"});
+      logic.createFile('all.zip', content, function(e, file) {
+        if(e) {
+        } else {
+          var url = file.toURL();
+          console.log(url);
+          location.href = url;
+          dispatch('save-done');
+        }
       });
     });
+
     model.saving = true;
   } else if(type === 'save-done') {
     model.saving = false;

@@ -76,12 +76,6 @@ function cuttingPoints(data, lengthThreshold, seekStart, seekEnd) {
   points.push([start, data.length - 1]);
   return points;
 }
-function cut(data, points, cb) {
-  points.forEach(function(point, i) {
-    cb(data.slice(point[0], point[1]), i);
-  });
-}
-
 function createWavFileBuffer(riff, format, buf) {
   var dataLength = buf.length;
   var riffDataSize = 4 + format.raw.length + 8 + dataLength;
@@ -126,6 +120,5 @@ function createFile(fileName, blob, cb) {
 module.exports = {
   createFile: createFile,
   createWavFileBuffer: createWavFileBuffer,
-  cut: cut,
   cuttingPoints: cuttingPoints
 };

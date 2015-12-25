@@ -5,6 +5,7 @@ var webserver = require('gulp-webserver');
 gulp.task('build', function() {
 	gulp.src('./src/*.js')
 		.pipe(browserify({
+			entries: ['src/app.js'],
 		  insertGlobals : true,
 		  debug : !gulp.env.production
 		}))
