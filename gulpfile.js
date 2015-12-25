@@ -1,15 +1,18 @@
 var gulp = require('gulp');
-var browserify = require('gulp-browserify');
+var browserify = require('browserify');
 var webserver = require('gulp-webserver');
+var plumber = require('gulp-plumber');
+var source = require('vinyl-source-stream');
 
 gulp.task('build', function() {
-	gulp.src('./src/*.js')
-		.pipe(browserify({
-			entries: ['src/app.js'],
-		  insertGlobals : true,
-		  debug : !gulp.env.production
-		}))
-		.pipe(gulp.dest('./assets'))
+	return browserify({
+      entries: ['src/app.js'],
+      extensions: ['.js']
+    })
+    .bundle()
+    .pipe(source('app.js'))
+    .pipe(plumber())
+    .pipe(gulp.dest('./assets'));
 });
 gulp.task('watch', function() {
 	gulp.src('.')

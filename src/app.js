@@ -50,11 +50,19 @@ function update(type, data) {
       });
     };
     reader.readAsArrayBuffer(data);
+    model.fileName = data.name;
     model.loading = true;
   } else if(type === 'calculate-cutting-points') {
     var context = model.audioContext;
     var buf = context.createBuffer(1, model.data.length, model.sampleRate);
-    buf.copyToChannel(model.data, 0, 0);
+    if(buf.copyToChannel) {
+      buf.copyToChannel(model.data, 0, 0);
+    } else {
+      var dest = buf.getChannelData(0);
+      for(var i = 0; i < dest.length; i++) {
+        dest[i] = model.data[i];
+      }
+    }
     model.data = buf;
     var source = context.createBufferSource();
     source.buffer = model.data;
@@ -173,7 +181,7 @@ function update(type, data) {
     });
     async.series(functions, function(e) {
       var content = zip.generate({type : "blob"});
-      logic.createFile('all.zip', content, function(e, file) {
+      logic.createFile(model.fileName.split('.mp3')[0] + '.zip', content, function(e, file) {
         if(e) {
         } else {
           var url = file.toURL();
