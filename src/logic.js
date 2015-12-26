@@ -97,28 +97,7 @@ function createWavFileBuffer(riff, format, buf) {
   var all = Buffer.concat([riffHeader, formatChunk, dataChunk]);
   return all;
 }
-function createFile(fileName, blob, cb) {
-  (window.requestFileSystem || window.webkitRequestFileSystem)(window.TEMPORARY, 1024*1024, function(fs) {
-    fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-      fileEntry.remove(function() {
-        fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-          fileEntry.createWriter(function(fileWriter) {
-            fileWriter.onwriteend = function(e) {
-              console.log(e);
-              cb(null, fileEntry);
-            };
-            fileWriter.onerror = function(e) {
-              cb(e);
-            };
-            fileWriter.write(blob);
-          }, cb);
-        });
-      }, cb);
-    }, cb);
-  });
-}
 module.exports = {
-  createFile: createFile,
   createWavFileBuffer: createWavFileBuffer,
   cuttingPoints: cuttingPoints
 };

@@ -193,15 +193,8 @@ function update(type, data) {
     });
     async.series(functions, function(e) {
       var content = zip.generate({type : "blob"});
-      logic.createFile(model.fileName.split('.mp3')[0] + '.zip', content, function(e, file) {
-        if(e) {
-        } else {
-          var url = file.toURL();
-          console.log(url);
-          location.href = url;
-          dispatch('save-done');
-        }
-      });
+      saveAs(content, model.fileName.split('.mp3')[0] + '.zip');
+      dispatch('save-done');
     });
 
     model.saving = true;

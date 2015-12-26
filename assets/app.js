@@ -12946,15 +12946,8 @@ function update(type, data) {
     });
     async.series(functions, function(e) {
       var content = zip.generate({type : "blob"});
-      logic.createFile(model.fileName.split('.mp3')[0] + '.zip', content, function(e, file) {
-        if(e) {
-        } else {
-          var url = file.toURL();
-          console.log(url);
-          location.href = url;
-          dispatch('save-done');
-        }
-      });
+      saveAs(content, model.fileName.split('.mp3')[0] + '.zip');
+      dispatch('save-done');
     });
 
     model.saving = true;
@@ -13438,28 +13431,7 @@ function createWavFileBuffer(riff, format, buf) {
   var all = Buffer.concat([riffHeader, formatChunk, dataChunk]);
   return all;
 }
-function createFile(fileName, blob, cb) {
-  (window.requestFileSystem || window.webkitRequestFileSystem)(window.TEMPORARY, 1024*1024, function(fs) {
-    fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-      fileEntry.remove(function() {
-        fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-          fileEntry.createWriter(function(fileWriter) {
-            fileWriter.onwriteend = function(e) {
-              console.log(e);
-              cb(null, fileEntry);
-            };
-            fileWriter.onerror = function(e) {
-              cb(e);
-            };
-            fileWriter.write(blob);
-          }, cb);
-        });
-      }, cb);
-    }, cb);
-  });
-}
 module.exports = {
-  createFile: createFile,
   createWavFileBuffer: createWavFileBuffer,
   cuttingPoints: cuttingPoints
 };
