@@ -72,6 +72,18 @@ function update(type, data) {
     model.loading = false;
     model.originalCuttingPoints = logic.cuttingPoints(model.data.getChannelData(0), 60000);
     model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
+    //
+    var actions = loadActions();
+    if(actions) {
+      var yes = confirm('Are you sure you want to restore the previous edits ?');
+      if(yes) {
+        model.actions = actions;
+        model.actionCursor = model.actions.length - 1;
+        replay();
+      } else {
+        removeActions();
+      }
+    }
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
@@ -134,26 +146,19 @@ function update(type, data) {
   } else if(type === 'undo') {
     if(model.actionCursor >= 0) {
       model.actionCursor--;
-      model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
-      for(var i = 0; i <= model.actionCursor; i++) {
-        edit(model.actions[i][0], model.actions[i][1]);
-      }
-      dispatch();
+      replay();
     }
   } else if(type === 'redo') {
     if(model.actionCursor < model.actions.length -1) {
       model.actionCursor++;
-      model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
-      for(var i = 0; i <= model.actionCursor; i++) {
-        edit(model.actions[i][0], model.actions[i][1]);
-      }
-      dispatch();
+      replay();
     }
   } else if(type === 'delete' || type === 'up' || type === 'cut') {
     edit(type, data);
     model.actions.length = model.actionCursor + 1;
     model.actions.push([type, data]);
     model.actionCursor = model.actions.length - 1;
+    saveActions();
   } else if(type === 'hover') {
     model.hover = data;
   } else if(type === 'create-button') {
@@ -197,6 +202,15 @@ function update(type, data) {
     model.saving = false;
   }
 }
+function replay() {
+  model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
+  for(var i = 0; i <= model.actionCursor; i++) {
+    edit(model.actions[i][0], model.actions[i][1]);
+  }
+  dispatch();
+}
+
+
 function edit(type, data) {
   if(type === 'delete') {
     var index = data;
@@ -232,6 +246,36 @@ function edit(type, data) {
         model.cuttingPoints[i][1] = toBeCut - 1;
       }
     }
+  }
+}
+function saveActions() {
+  try {
+    var key = model.fileName + ':' + model.data.length;
+    localStorage.setItem(key, JSON.stringify(model.actions));
+  } catch(e) {
+    console.log(e);
+  }
+}
+function removeActions() {
+  try {
+    var key = model.fileName + ':' + model.data.length;
+    localStorage.removeItem(key);
+  } catch(e) {
+    console.log(e);
+  }
+}
+function loadActions() {
+  try {
+    var key = model.fileName + ':' + model.data.length;
+    var str = localStorage.getItem(key);
+    if(str) {
+      return JSON.parse(str);
+    } else {
+      return null;
+    }
+  } catch(e) {
+    console.log(e);
+    return null;
   }
 }
 function stop() {
