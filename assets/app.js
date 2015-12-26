@@ -12770,7 +12770,6 @@ function mobile() {
     || ua.indexOf('iPod') > 0
     || ua.indexOf('Android') > 0);
 }
-
 function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps, cb) {
   var lameWorker = new Worker('./assets/lame-work.js');
   lameWorker.addEventListener('message', function(e) {
@@ -13223,10 +13222,10 @@ function renderWave(point, index) {
     },
     on: {
       mousemove: function(e) {
-        dispatch('hover', [index, e.layerX]);
+        dispatch('hover', [index, e.offsetX]);
       },
       click: function(e) {
-        dispatch('click-canvas', [index, e.layerX, width]);
+        dispatch('click-canvas', [index, e.offsetX, width]);
       }
     },
     hook: {
