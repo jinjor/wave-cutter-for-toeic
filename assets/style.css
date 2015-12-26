@@ -14,6 +14,11 @@
     width: 750px;
   }
 }
+@media (min-width: 500px) {
+  .navbar-header {
+    float: left;
+  }
+}
 .navbar {
   border-radius: 0;
 }
@@ -24,7 +29,7 @@
   font-weight: bold;
 }
 .icon-github {
-  margin-top: 4px;
+  top: 4px;
   color: #777;
   margin-right: 44px;
 }
@@ -39,6 +44,10 @@
 }
 .btn[disabled] {
   cursor: inherit;
+}
+.mobile-message {
+  font-size: large;
+  margin-bottom: 10px;
 }
 .loading {
     height: 50px;

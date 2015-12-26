@@ -10,6 +10,14 @@ var patch = snabbdom.init([
 ]);
 var h = require('snabbdom/h');
 
+function mobile() {
+  var ua = navigator.userAgent;
+  // return true;
+  return ((ua.indexOf('iPhone') > 0 && ua.indexOf('iPad') < 0)
+    || ua.indexOf('iPod') > 0
+    || ua.indexOf('Android') > 0);
+}
+
 function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps, cb) {
   var lameWorker = new Worker('./assets/lame-work.js');
   lameWorker.addEventListener('message', function(e) {
@@ -35,7 +43,6 @@ var model = {
 };
 
 function update(type, data) {
-
   if(type === 'init') {
 
   } else if(type === 'read-button') {
@@ -287,12 +294,60 @@ function stop() {
   model.playingPosition = null;
   model.startTime = null;
 }
-
 function render() {
-  var main = model.saving ? renderLoading('Now compressing waves...') : model.loading ? renderLoading('Now loading and processing...') : renderWaves();
-  return h('div#container.container', [
-    renderControls(),
-    h('div#canvas-container', main)
+  return h('div', [renderHeader(), renderMain()]);
+}
+function renderMain() {
+  var contents;
+  if(mobile()) {
+    contents = [
+      h('div.mobile-message', ['Sorry, this application is for PC only.']),
+      renderGithubLink(),
+      renderShareButtons()
+    ];
+  } else {
+    var main = model.saving ?
+      renderLoading('Now compressing waves...') :
+      (model.loading ? renderLoading('Now loading and processing...') : renderWaves());
+    contents = [
+      renderControls(),
+      h('div#canvas-container', main)
+    ];
+  }
+  return h('div#container.container', contents);
+}
+function renderGithubLink() {
+  return h('a.icon-github' + (mobile() ? '' : '.pull-right'),
+    { props: { target: '_blank', href: 'https://github.com/jinjor/wave-cutter-for-toeic'}}, ['Source']);
+}
+function renderShareButtons() {
+  return h('div#share-buttons.pull-right', [
+    h('a', {
+      props: {
+        href: 'http://www.facebook.com/sharer.php?u=http://jinjor.github.io/wave-cutter-for-toeic/',
+        target: '_blank'
+      }
+    }, [ h('img', { props: { src: './assets/facebook.png', alt: 'Facebook'}})]),
+    h('a', {
+      props: {
+        href: 'https://twitter.com/share?url=http://jinjor.github.io/wave-cutter-for-toeic/&amp;text=Wave%20Cutter%20for%20TOEIC&amp;hashtags=wc4t',
+        target: '_blank'
+      }
+    }, [ h('img', { props: { src: './assets/twitter.png', alt: 'Twitter'}})])
+  ]);
+}
+function renderHeader() {
+  var navContents = [
+    h('div.navbar-header', [
+      h('a.navbar-brand', {props: { href: '.'} }, [ 'Wave Cutter for TOEIC®'])
+    ])
+  ];
+  if(!mobile()) {
+    navContents.push(renderShareButtons());
+    navContents.push(renderGithubLink());
+  }
+  return h('nav.navbar.navbar-default', [
+    h('div.container', navContents)
   ]);
 }
 function renderLoading(message) {
