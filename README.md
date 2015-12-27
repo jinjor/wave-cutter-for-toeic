@@ -1,7 +1,7 @@
 # Wave Cutter for TOEIC&reg;
 
-A tool for cutting listening CD.
-
-<img width="600px" src="./wc4t-screen.png">
+A tool for cutting wave of listening CD. This may be useful when you seek and repeat one problem.
 
 **[Try it!](http://jinjor.github.io/wave-cutter-for-toeic)**
+
+<img width="600px" src="./wc4t-screen.png">
