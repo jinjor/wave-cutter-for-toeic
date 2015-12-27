@@ -100,15 +100,21 @@ function update(type, data) {
     model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
     model.maxRows = model.cuttingPoints.length;
     //
-    var actions = loadActions();
-    if(actions) {
-      var yes = confirm('Are you sure you want to restore the previous edits ?');
+    var value = loadActionsAndState();
+    if(value) {
+      var yes = confirm('Are you sure you want to restore the previous edits?');
       if(yes) {
-        model.actions = actions;
-        model.actionCursor = model.actions.length - 1;
-        replay();
+        try {
+          model.actions = value.actions;
+          model.namingType = value.namingType;
+          model.actionCursor = model.actions.length - 1;
+          replay();
+        } catch(e) {
+          alert('failed to restore data');
+          removeActionsAndState();
+        }
       } else {
-        removeActions();
+        removeActionsAndState();
       }
     }
   } else if(type === 'fix-control') {
@@ -121,6 +127,7 @@ function update(type, data) {
       newType = model.namingTypes.length - 1;
     }
     model.namingType = newType;
+    saveActionsAndState();
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
@@ -195,7 +202,7 @@ function update(type, data) {
     model.actions.length = model.actionCursor + 1;
     model.actions.push([type, data]);
     model.actionCursor = model.actions.length - 1;
-    saveActions();
+    saveActionsAndState();
   } else if(type === 'hover') {
     model.hover = data;
   } else if(type === 'create-button') {
@@ -280,15 +287,19 @@ function edit(type, data) {
     model.maxRows = model.cuttingPoints.length;
   }
 }
-function saveActions() {
+function saveActionsAndState() {
   try {
     var key = model.fileName + ':' + model.data.length;
-    localStorage.setItem(key, JSON.stringify(model.actions));
+    var value = {
+      actions: model.actions,
+      namingType: model.namingType
+    }
+    localStorage.setItem(key, JSON.stringify(value));
   } catch(e) {
     console.log(e);
   }
 }
-function removeActions() {
+function removeActionsAndState() {
   try {
     var key = model.fileName + ':' + model.data.length;
     localStorage.removeItem(key);
@@ -296,7 +307,7 @@ function removeActions() {
     console.log(e);
   }
 }
-function loadActions() {
+function loadActionsAndState() {
   try {
     var key = model.fileName + ':' + model.data.length;
     var str = localStorage.getItem(key);
