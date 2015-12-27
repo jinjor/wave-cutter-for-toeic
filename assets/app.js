@@ -13084,24 +13084,26 @@ function stop() {
   model.startTime = null;
 }
 function render() {
-  return h('div', [renderHeader(), renderControls(), renderMain()]);
-}
-function renderMain() {
   var contents;
   if(mobile()) {
     contents = [
-      h('div.mobile-message', ['Sorry, this application is for PC only.']),
-      renderGithubLink(),
-      renderShareButtons()
+      renderHeader(),
+      h('div#container.container', [
+        h('div.mobile-message', ['Sorry, this application is for PC only.']),
+        renderGithubLink(),
+        renderShareButtons()
+      ])
     ];
   } else {
-    var main = model.saving ?
-      renderLoading('Now compressing waves...') :
-      (model.loading ? renderLoading('Now loading and processing...') : renderWaves());
-    contents = [ h('div#canvas-container', main)
-    ];
+    contents = [renderHeader(), renderControls(), renderMain()];
   }
-  return h('div#container.container', contents);
+  return h('div', contents);
+}
+function renderMain() {
+  var main = model.saving ?
+    renderLoading('Now compressing waves...') :
+    (model.loading ? renderLoading('Now loading and processing...') : renderWaves());
+  return h('div#container.container', [ h('div#canvas-container', main) ]);
 }
 function renderGithubLink() {
   return h('a.icon-github' + (mobile() ? '' : '.pull-right'),
