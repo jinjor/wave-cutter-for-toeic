@@ -38,6 +38,7 @@ var model = {
   startTime: null,
   hover: null,
   toBeCut: null,
+  fixControl: false,
   audioContext: new AudioContext()
 };
 
@@ -90,6 +91,8 @@ function update(type, data) {
         removeActions();
       }
     }
+  } else if(type === 'fix-control') {
+    model.fixControl = data;
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
@@ -287,7 +290,7 @@ function stop() {
   model.startTime = null;
 }
 function render() {
-  return h('div', [renderHeader(), renderMain()]);
+  return h('div', [renderHeader(), renderControls(), renderMain()]);
 }
 function renderMain() {
   var contents;
@@ -301,9 +304,7 @@ function renderMain() {
     var main = model.saving ?
       renderLoading('Now compressing waves...') :
       (model.loading ? renderLoading('Now loading and processing...') : renderWaves());
-    contents = [
-      renderControls(),
-      h('div#canvas-container', main)
+    contents = [ h('div#canvas-container', main)
     ];
   }
   return h('div#container.container', contents);
@@ -401,7 +402,7 @@ function renderControls() {
     ]);
     children.push(count);
   }
-  return h('div.controls', children);
+  return h('div.controls-container' + (model.fixControl ? '.fixed' : ''), [h('div.container', [h('div.controls', children)])]);
 }
 function renderWaves() {
   if(!model.data) {
@@ -575,4 +576,12 @@ document.onkeydown = function (e) {
     dispatch('redo');
   }
 };
+document.addEventListener('scroll', function() {
+  var scroll = document.body.scrollTop;
+  if(scroll > 60) {
+    dispatch('fix-control', true);
+  } else {
+    dispatch('fix-control', false);
+  }
+});
 dispatch('init');
