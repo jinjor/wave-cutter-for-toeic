@@ -2,6 +2,6 @@
 
 A tool for cutting listening CD.
 
-<img src="./wc4t-screen.png">
+<img width="600px" src="./wc4t-screen.png">
 
 **[Try it!](http://jinjor.github.io/wave-cutter-for-toeic)**
