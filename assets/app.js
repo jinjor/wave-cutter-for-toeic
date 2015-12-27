@@ -12856,7 +12856,7 @@ function update(type, data) {
     //
     var value = loadActionsAndState();
     if(value) {
-      var yes = confirm('Are you sure you want to restore the previous edits?');
+      var yes = confirm('Do you want to restore the previous edits?');
       if(yes) {
         try {
           model.actions = value.actions;
@@ -13214,7 +13214,7 @@ function renderLoadButton(step) {
     }
   }, [
     h('span', ['Choose file']),
-    h('input#read.read', {props:{type:'file'}})
+    h('input#read.read', {props:{type:'file', accept:'.wav,.mp3,.ogg,.aac'}})
   ]);
 }
 
