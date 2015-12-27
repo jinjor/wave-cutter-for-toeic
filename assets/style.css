@@ -7,7 +7,7 @@
   font-family: 'icomoon' !important;
 }
 .btn[class^="icon-"], .btn[class*=" icon-"] {
-  padding: 10px 12px;
+  padding: 9px 12px;
 }
 @media (min-width: 992px) {
   .container {
@@ -50,17 +50,17 @@
   margin-bottom: 10px;
 }
 .loading {
-    height: 50px;
-    position: relative;
+  height: 50px;
+  position: relative;
 }
 .loading .loading-bar {
-    height: 20px;
-    width: 18px;
-    position:absolute;
-    bottom: 0;
-    background-color: #597;
-    -webkit-animation: animation5-bar linear 1s infinite;
-    animation: animation5-bar linear 1s  infinite;
+  height: 20px;
+  width: 18px;
+  position:absolute;
+  bottom: 0;
+  background-color: #597;
+  -webkit-animation: animation5-bar linear 1s infinite;
+  animation: animation5-bar linear 1s  infinite;
 }
 .loading .loading-bar1 {
   left: 0;
@@ -88,9 +88,9 @@
   animation-delay: 0.8s;
 }
 @keyframes animation5-bar {
-    50% {
-      height:50px;
-    }
+  50% {
+    height:50px;
+  }
 }
 
 #share-buttons {
@@ -124,46 +124,109 @@
 .controls .btn {
   display: block;
 }
+.naming-button-container {
+  position: absolute;
+  right: 140px;
+  display: flex;
+}
+.naming-button-container .naming-button {
+  width: 80px;
+  border: none;
+  line-height: 34px;
+  text-align: center;
+}
+.naming-button-container .prev-step {
+  border-top: 17px solid transparent;
+  border-bottom: 17px solid transparent;
+  border-right: 15px solid #ddd;
+  padding: 0;
+}
+.naming-button-container .prev-step:hover {
+  border-right: 15px solid #aaa;
+}
+.naming-button-container .next-step {
+  border-top: 17px solid transparent;
+  border-bottom: 17px solid transparent;
+  border-left: 15px solid #ddd;
+  padding: 0;
+}
+.naming-button-container .next-step:hover {
+  border-left: 15px solid #aaa;
+}
+
 .wave-count {
   position: absolute;
+  top: -2px;
   right: 0;
   color: #aaa;
   font-weight: bold;
+}
+.wave-count.matched {
+  color: #597;
 }
 .wave-count-number {
   font-size: 2em;
   margin-right: 2px;
 }
-.next-step {
-  border-top: 17px solid transparent;
-  border-bottom: 17px solid transparent;
-  border-left: 15px solid #ddd;
-}
+
 input[type=file].read {
   display: none;
 }
 
 .wave-area {
-  height: 40px;
   margin-top: 3px;
-  margin-bottom: 3px;
+  margin-bottom: 10px;
   position: relative;
-  /*background-color: #eee;*/
+  background-color: #ddd;
+  width: 212px;
+  height: 34px
+}
+.wave-area.empty {
+  background-color: #fff;
 }
 
 .wave-area canvas {
   position: absolute;
   top: 0;
-  left: 130px;
+  left: 212px;
 }
+.wave-area .wave-area-name {
+  margin-right: 3px;
+  width: 80px;
+  font-weight: bold;
+  font-size: 16px;
+  /*color: #888;*/
+  padding: 5px 12px;
 
+  display: inline-block;
+  margin-bottom: 0;
+  line-height: 1.42857143;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  -ms-touch-action: manipulation;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  background-image: none;
+  border: none;
+}
 .wave-area .wave-area-button {
   display: inline-block;
   border-radius: 50%;
   margin-right: 3px;
+  border: none;
+  margin-top: -1px;
+}
+.wave-area .wave-area-button.icon-smile {
+  margin-top: 1px;
+  padding: 8.5px 12px;
 }
 .wave-area-button.wave-area-cut {
-  margin-top: -34px;
+  top: -17px;
   transform: rotateX(180deg);
   font-weight: bold;
+  position: absolute;
 }

@@ -9,6 +9,7 @@ var patch = snabbdom.init([
   require('snabbdom/modules/eventlisteners'),
 ]);
 var h = require('snabbdom/h');
+var namingTypes = require('./names.js');
 
 function mobile() {
   var ua = navigator.userAgent;
@@ -20,8 +21,22 @@ function mobile() {
 function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps, cb) {
   var lameWorker = new Worker('./assets/lame-work.js');
   lameWorker.addEventListener('message', function(e) {
-    cb(null, e.data);
+    try {
+      lameWorker.terminate();
+      cb(null, e.data);
+    } catch(e) {
+      cb(e);
+    }
   }, false);
+  lameWorker.addEventListener('error', function(e) {
+    console.log(e);
+    try {
+      lameWorker.terminate();
+      cb(e);
+    } catch(e2) {
+      cb([e, e2]);
+    }
+  });
   lameWorker.postMessage({
     samples: samples,
     channels: channels,
@@ -40,8 +55,11 @@ var model = {
   toBeCut: null,
   fixControl: false,
   maxRows: 0,
+  namingTypes: namingTypes,
+  namingType: 2,
   audioContext: new AudioContext()
 };
+
 
 function update(type, data) {
   if(type === 'init') {
@@ -95,6 +113,14 @@ function update(type, data) {
     }
   } else if(type === 'fix-control') {
     model.fixControl = data;
+  } else if(type === 'naming') {
+    var newType = model.namingType + data;
+    if(newType >= model.namingTypes.length) {
+      newType = 0;
+    } else if(newType < 0) {
+      newType = model.namingTypes.length - 1;
+    }
+    model.namingType = newType;
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
@@ -184,7 +210,8 @@ function update(type, data) {
           samples[j] = Math.floor(buf[j] * 32767);
         }
         encodeMp3(samples/*Int16Array*/, 1, model.data.sampleRate, 128, function(e, blob) {
-          var fileName = i + '.mp3';
+          var name = model.namingTypes[model.namingType].names[i];
+          var fileName = (i + 1) + (name ? '_no' + name : '') + '.mp3';
           var reader = new FileReader();
           reader.onload = function() {
             zip.file(fileName, reader.result, {binary:true});
@@ -355,9 +382,60 @@ function renderLoading(message) {
     h('div.loading-bar.loading-bar5')
   ]), h('div.loading-message', [message])];
 }
-function renderControls() {
-  var step = model.cuttingPoints ? 1 : 0;
-  var children = [h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
+function renderUndoButton() {
+  return h('button.btn.btn-default.icon-undo', {
+    props: {
+      disabled: model.actionCursor < 0
+    },
+    on: {
+      click: function() {
+        dispatch('undo');
+      }
+    }
+  });
+}
+function renderRedoButton() {
+  return h('button.btn.btn-default.icon-redo', {
+    props: {
+      disabled: model.actionCursor >= model.actions.length - 1
+    },
+    on: {
+      click: function() {
+        dispatch('redo');
+      }
+    }
+  });
+}
+function renderNamingButton() {
+  var name = h('div.naming-button', [model.namingTypes[model.namingType].name]);
+  var prev = h('div.btn.prev-step', {
+    on: {
+      click: function() {
+        dispatch('naming', -1);
+      }
+    }
+  });
+  var next = h('div.btn.next-step', {
+    on: {
+      click: function() {
+        dispatch('naming', 1);
+      }
+    }
+  });
+
+  return h('div.naming-button-container', [prev, name, next]);
+}
+function renderSaveButton(step) {
+  return h('button.btn.btn-' + (step === 1 ? 'primary' : 'default'), {
+    on: {
+      click: function() {
+        dispatch('create-button');
+      }
+    }
+  }, ['Save']);
+}
+function renderLoadButton(step) {
+  return h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
     props:{for:'read'},
     on: {
       change: function(e) {
@@ -368,40 +446,23 @@ function renderControls() {
   }, [
     h('span', ['Choose file']),
     h('input#read.read', {props:{type:'file'}})
-  ])];
+  ]);
+}
+
+function renderControls() {
+  var step = model.cuttingPoints ? 1 : 0;
+  var children = [renderLoadButton(step)];
   if(model.cuttingPoints) {
-    children.push(h('button.btn.btn-' + (step === 1 ? 'primary' : 'default'), {
-      on: {
-        click: function() {
-          dispatch('create-button');
-        }
-      }
-    }, ['Save']));
-    children.push(h('button.btn.btn-default.icon-undo', {
-      props: {
-        disabled: model.actionCursor < 0
-      },
-      on: {
-        click: function() {
-          dispatch('undo');
-        }
-      }
-    }));
-    children.push(h('button.btn.btn-default.icon-redo', {
-      props: {
-        disabled: model.actionCursor >= model.actions.length - 1
-      },
-      on: {
-        click: function() {
-          dispatch('redo');
-        }
-      }
-    }));
+    children.push(renderSaveButton(step));
+    children.push(renderUndoButton());
+    children.push(renderRedoButton());
+    children.push(renderNamingButton());
 
-
-    var count = h('div.wave-count', [
-      h('span.wave-count-number', [model.cuttingPoints.length]),
-      h('span', ['waves'])
+    var expected = model.namingTypes[model.namingType].names.length;
+    var actual = model.cuttingPoints.length;
+    var count = h('div.wave-count' + (expected === actual ? '.matched' : ''), [
+      h('span.wave-count-number', [actual]),
+      h('span', ['/ ' + expected + ' waves'])
     ]);
     children.push(count);
   }
@@ -416,13 +477,14 @@ function renderWaves() {
     waves.push(renderWave(point, i));
   });
   for(var i = model.cuttingPoints.length; i < model.maxRows; i++) {
-    waves.push(h('div.wave-area'));
+    waves.push(h('div.wave-area.empty'));
   }
   return waves;
 }
 function renderWave(point, index) {
   var height = 34;
   var width = (point[1] - point[0]) / model.data.sampleRate * 10;
+  var name = h('span.wave-area-name', [model.namingTypes[model.namingType].names[index] || '　']);
   var deleteButton = h('span.wave-area-button.wave-area-delete.btn.btn-danger.glyphicon.glyphicon-remove', {
     on: {
       click: function(e) {
@@ -488,13 +550,13 @@ function renderWave(point, index) {
       }
     }
   });
-  var children =  [layer0, layer1, deleteButton, upMergeButton, playButton]
+  var children =  [layer0, layer1, name, deleteButton, upMergeButton, playButton]
   if(model.toBeCut && model.cuttingPoints[index][0] < model.toBeCut &&
       model.toBeCut < model.cuttingPoints[index][1]) {
     var left = width * ((model.toBeCut - model.cuttingPoints[index][0]) / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
     var cutHelper = h('span.wave-area-button.wave-area-cut.btn.btn-default.icon-scissors', {
       style: {
-        'margin-left': (left - 19) + 'px'
+        'margin-left': (left - 13) + 'px'
       },
       on: {
         click: function(e) {
@@ -517,8 +579,8 @@ function renderWaveOnCanvas0(layer0, width, height, point, index) {
     var pos = point[0] + Math.floor((point[1] - point[0]) * (i / width));
     var value = Math.abs(data[pos]);
     ctx.beginPath();
-    ctx.moveTo(i+0.5, height);
-    ctx.lineTo(i+0.5, height - height * value * 2);
+    ctx.moveTo(i + 0.5, height);
+    ctx.lineTo(i + 0.5, height - height * value * 2);
     ctx.closePath();
     ctx.stroke();
   }
@@ -532,8 +594,8 @@ function renderWaveOnCanvas1(layer1, width, height, point, index) {
       var left = width * ((model.toBeCut - model.cuttingPoints[index][0]) / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
       ctx.strokeStyle = '#fff';
       ctx.beginPath();
-      ctx.moveTo(left+0.5, height);
-      ctx.lineTo(left+0.5, 0);
+      ctx.moveTo(left + 0.5, height);
+      ctx.lineTo(left + 0.5, 0);
       ctx.closePath();
       ctx.stroke();
     }
@@ -545,8 +607,8 @@ function renderWaveOnCanvas1(layer1, width, height, point, index) {
       var pos = (model.currentTime - model.startTime) / 1000 * 10;
       ctx.strokeStyle = '#adf';
       ctx.beginPath();
-      ctx.moveTo(pos+0.5, height);
-      ctx.lineTo(pos+0.5, 0);
+      ctx.moveTo(pos + 0.5, height);
+      ctx.lineTo(pos + 0.5, 0);
       ctx.closePath();
       ctx.stroke();
     }
