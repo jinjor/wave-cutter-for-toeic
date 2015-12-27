@@ -57,6 +57,7 @@ var model = {
   maxRows: 0,
   namingTypes: namingTypes,
   namingType: 2,
+  encodedFiles: [],
   audioContext: new AudioContext()
 };
 
@@ -206,8 +207,8 @@ function update(type, data) {
   } else if(type === 'hover') {
     model.hover = data;
   } else if(type === 'create-button') {
+    model.encodedFiles = [];
     var zip = new JSZip();
-
     var data = model.data.getChannelData(0);
     var functions = model.cuttingPoints.map(function(point, i) {
       return function(cb) {
@@ -222,11 +223,12 @@ function update(type, data) {
           var reader = new FileReader();
           reader.onload = function() {
             zip.file(fileName, reader.result, {binary:true});
+            model.encodedFiles.push(fileName);
+            dispatch();
             cb();
           };
           reader.readAsArrayBuffer(blob);
         });
-
       };
     });
     async.series(functions, function(e) {
@@ -348,7 +350,8 @@ function render() {
 }
 function renderMain() {
   var main = model.saving ?
-    renderLoading('Now compressing waves...') :
+    renderLoading('Now compressing waves...(' +
+      model.encodedFiles.length + '/' + model.cuttingPoints.length + ' done)') :
     (model.loading ? renderLoading('Now loading and processing...') : renderWaves());
   return h('div#container.container', [ h('div#canvas-container', main) ]);
 }
