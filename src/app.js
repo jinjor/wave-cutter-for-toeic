@@ -39,6 +39,7 @@ var model = {
   hover: null,
   toBeCut: null,
   fixControl: false,
+  maxRows: 0,
   audioContext: new AudioContext()
 };
 
@@ -79,6 +80,7 @@ function update(type, data) {
     model.loading = false;
     model.originalCuttingPoints = logic.cuttingPoints(model.data.getChannelData(0), 60000);
     model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
+    model.maxRows = model.cuttingPoints.length;
     //
     var actions = loadActions();
     if(actions) {
@@ -248,6 +250,7 @@ function edit(type, data) {
         model.cuttingPoints[i][1] = toBeCut - 1;
       }
     }
+    model.maxRows = model.cuttingPoints.length;
   }
 }
 function saveActions() {
@@ -412,6 +415,9 @@ function renderWaves() {
   model.cuttingPoints.forEach(function(point, i) {
     waves.push(renderWave(point, i));
   });
+  for(var i = model.cuttingPoints.length; i < model.maxRows; i++) {
+    waves.push(h('div.wave-area'));
+  }
   return waves;
 }
 function renderWave(point, index) {
