@@ -58,7 +58,7 @@ var model = {
   namingTypes: namingTypes,
   namingType: 2,
   encodedFiles: [],
-  audioContext: new AudioContext()
+  audioContext: AudioContext ? new AudioContext() : null;
 };
 
 
