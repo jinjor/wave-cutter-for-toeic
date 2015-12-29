@@ -58,7 +58,7 @@ var model = {
   namingTypes: namingTypes,
   namingType: 2,
   encodedFiles: [],
-  audioContext: AudioContext ? new AudioContext() : null;
+  audioContext: window.AudioContext ? new AudioContext() : null
 };
 
 
