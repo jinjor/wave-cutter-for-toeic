@@ -49,8 +49,9 @@ var model = {
   actions: [],
   actionCursor: -1,
   source: null,
-  playingPosition: null,
+  startPosition: null,
   startTime: null,
+  currentTime: null,
   hover: null,
   toBeCut: null,
   fixControl: false,
@@ -132,23 +133,26 @@ function update(type, data) {
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
-    var playing = model.playingPosition !== null;
+    var playing = model.currentTime !== null;
+    var playingIndex = indexOfPosition(currentPosition());
     if(playing) {
       model.source.stop();
-      var source = context.createBufferSource();
-      source.buffer = model.data;
-      source.connect(context.destination);
-      model.source = source;
+      refreshSource();
     }
-    if(!playing || model.playingPosition[0] !== model.cuttingPoints[index][0]) {
-      var start = model.cuttingPoints[index][0] / model.data.sampleRate;
-      model.source.start(0, start);
-      model.playingPosition = model.cuttingPoints[index];
+    if(!playing || (playingIndex !== index)) {
+      if(indexOfPosition(model.toBeCut) === index) {
+        model.startPosition = model.toBeCut;
+      } else {
+        model.startPosition = model.cuttingPoints[index][0];
+      }
       model.startTime = new Date().getTime();
       model.currentTime = new Date().getTime();
+      var start = model.startPosition / model.data.sampleRate;
+      model.source.start(0, start);
     } else {
-      model.playingPosition = null;
+      model.startPosition = null;
       model.startTime = null;
+      model.currentTime = null;
     }
     if(!playing) {
       dispatch('tick');
@@ -172,13 +176,27 @@ function update(type, data) {
       }
     });
     model.toBeCut = nearest;
+
+    var wasPlaying = model.currentTime;
+    if(wasPlaying) {
+      model.startTime = new Date().getTime();
+      model.startPosition = nearest;
+      model.currentTime = new Date().getTime();
+      model.source.stop();
+      refreshSource();
+      var start = nearest / model.data.sampleRate;
+      model.source.start(0, start);
+    }
+
   } else if(type === 'tick') {
-    model.currentTime = new Date().getTime();
-    if(model.playingPosition !== null) {
-      var sampleLength = model.playingPosition[1] - model.playingPosition[0];
-      var length = sampleLength / model.data.sampleRate * 1000;
+    if(model.currentTime !== null) {
+      model.currentTime = new Date().getTime();
+      var currentPos = currentPosition();
+      var startIndex = indexOfPosition(model.startPosition);
       var interval = 100;
-      if(model.currentTime - model.startTime + interval < length) {
+      var nextPos = currentPos + (interval / 1000) * model.sampleRate;
+      var nextIndex = indexOfPosition(nextPos);
+      if(startIndex === nextIndex) {
         setTimeout(function() {
           dispatch('tick');
         }, interval);
@@ -242,6 +260,29 @@ function update(type, data) {
     model.saving = false;
   }
 }
+function refreshSource() {
+  var context = model.audioContext;
+  var source = context.createBufferSource();
+  source.buffer = model.data;
+  source.connect(context.destination);
+  model.source = source;
+}
+function currentPosition() {
+  return model.startPosition + dataLengthOfTime(model.currentTime - model.startTime);
+}
+function dataLengthOfTime(ms) {
+  return model.sampleRate * (ms / 1000);
+}
+function indexOfPosition(position) {
+  for(var i = model.cuttingPoints.length -1; i >= 0; i--) {
+    if(model.cuttingPoints[i][0] <= position) {
+      return i;
+    }
+  }
+}
+function inRangeOf(index, pos) {
+  return model.cuttingPoints[index][0] <= pos && pos < model.cuttingPoints[index][1];
+}
 function replay() {
   model.cuttingPoints = JSON.parse(JSON.stringify(model.originalCuttingPoints));
   for(var i = 0; i <= model.actionCursor; i++) {
@@ -254,27 +295,15 @@ function replay() {
 function edit(type, data) {
   if(type === 'delete') {
     var index = data;
-    if(model.playingPosition) {
-      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
-      if(inThisRange) {
+    if(model.startPosition !== null) {
+      var currentPos = currentPosition();
+      if(inRangeOf(index)) {
         stop();
       }
     }
     model.cuttingPoints.splice(index, 1);
   } else if(type === 'up') {
     var index = data;
-    if(model.playingPosition) {
-      var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-      var inPrevRange = model.cuttingPoints[index-1][0] <= currentPosition && currentPosition < model.cuttingPoints[index-1][1];
-      var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
-      if(inPrevRange) {
-        model.playingPosition[1] = model.cuttingPoints[index][1];
-      } else if(inThisRange) {
-        model.playingPosition[0] = model.cuttingPoints[index-1][0];
-        model.startTime -= (model.cuttingPoints[index-1][1] - model.cuttingPoints[index-1][0]) / model.data.sampleRate * 1000;
-      }
-    }
     model.cuttingPoints[index-1][1] = model.cuttingPoints[index][1];
     model.cuttingPoints.splice(index, 1);
   } else if(type === 'cut') {
@@ -289,6 +318,7 @@ function edit(type, data) {
     model.maxRows = model.cuttingPoints.length;
   }
 }
+
 function saveActionsAndState() {
   try {
     var key = model.fileName + ':' + model.data.length;
@@ -325,12 +355,9 @@ function loadActionsAndState() {
 }
 function stop() {
   model.source.stop();
-  var source = model.audioContext.createBufferSource();
-  source.buffer = model.data;
-  source.connect(model.audioContext.destination);
-  model.source = source;
-  model.playingPosition = null;
+  refreshSource();
   model.startTime = null;
+  model.currentTime = null;
 }
 function render() {
   var contents;
@@ -516,10 +543,9 @@ function renderWave(point, index) {
     }
   }) : h('span.wave-area-button.wave-area-up.btn.btn-default.icon-smile');
   var playIconClass = 'glyphicon-play';
-  if(model.playingPosition) {
-    var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-    var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition < model.cuttingPoints[index][1];
-    if(inThisRange) {
+  if(model.currentTime) {
+    var currentPos = currentPosition();
+    if(inRangeOf(index, currentPos)) {
       playIconClass = 'glyphicon-pause';
     }
   }
@@ -616,11 +642,12 @@ function renderWaveOnCanvas1(layer1, width, height, point, index) {
       ctx.stroke();
     }
   }
-  if(model.playingPosition) {
-    var currentPosition = model.playingPosition[0] + (model.currentTime - model.startTime) / 1000 * model.data.sampleRate;
-    var inThisRange = model.cuttingPoints[index][0] <= currentPosition && currentPosition <= model.cuttingPoints[index][1];
-    if(inThisRange) {
-      var pos = (model.currentTime - model.startTime) / 1000 * 10;
+  if(model.startPosition !== null) {
+    var currentPos = currentPosition();
+    if(inRangeOf(index, currentPos)) {
+      var currentPos = currentPosition();
+      var dataIndex = currentPos - model.cuttingPoints[index][0];
+      var pos = width * (dataIndex / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
       ctx.strokeStyle = '#adf';
       ctx.beginPath();
       ctx.moveTo(pos + 0.5, height);
