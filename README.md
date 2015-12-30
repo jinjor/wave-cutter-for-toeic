@@ -41,11 +41,13 @@ You can choose naming rules from below.
 |Chrome|✓|
 |Firefox|✓|
 |Edge|✓|
+|Safari|Not tested|
+|Opera|Not tested|
 |IE11|Not tested|
 |IE10|Not tested|
 |IE9|Not tested|
 |IE8|Not tested|
-|Mobile|Not supported|
+|Mobile browsers|Not supported|
 
 ### Decoding format
 
