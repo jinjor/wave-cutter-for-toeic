@@ -63,7 +63,6 @@ var model = {
   audioContext: window.AudioContext ? new AudioContext() : null
 };
 
-
 function update(type, data) {
   if(type === 'init') {
 
@@ -71,7 +70,6 @@ function update(type, data) {
     var reader = new FileReader();
     reader.onload = function(e) {
       var context = model.audioContext;
-      console.log('decoding...');
       context.decodeAudioData(e.target.result, function(decodedData) {
         model.data = decodedData.getChannelData(0);
         model.sampleRate = decodedData.sampleRate;
@@ -162,30 +160,16 @@ function update(type, data) {
     var index = data[0];
     var canvasLeft = data[1];
     var canvasWidth = data[2];
-    var dataLength = model.cuttingPoints[index][1] - model.cuttingPoints[index][0];
-    var dataIndex = dataLength * (canvasLeft / canvasWidth);
-
-    var points = logic.cuttingPoints(model.data.getChannelData(0), 20000,
-      model.cuttingPoints[index][0], model.cuttingPoints[index][1]);
-    var minLag = Infinity;
-    var nearest = null;
-    points.forEach(function(point) {
-      var lag = Math.abs(point[0] - (dataIndex + model.cuttingPoints[index][0]));
-      if(lag < minLag) {
-        minLag = lag;
-        nearest = point[0];
-      }
-    });
-    model.toBeCut = nearest;
+    model.toBeCut = findNearestToBeCut(index, canvasLeft, canvasWidth);
 
     var wasPlaying = model.currentTime;
     if(wasPlaying) {
       model.startTime = new Date().getTime();
-      model.startPosition = nearest;
+      model.startPosition = model.toBeCut;
       model.currentTime = new Date().getTime();
       model.source.stop();
       refreshSource();
-      var start = nearest / model.data.sampleRate;
+      var start = model.toBeCut / model.data.sampleRate;
       model.source.start(0, start);
     }
 
@@ -260,6 +244,23 @@ function update(type, data) {
   } else if(type === 'save-done') {
     model.saving = false;
   }
+}
+function findNearestToBeCut(index, canvasLeft, canvasWidth) {
+  var dataLength = model.cuttingPoints[index][1] - model.cuttingPoints[index][0];
+  var dataIndex = dataLength * (canvasLeft / canvasWidth);
+
+  var points = logic.cuttingPoints(model.data.getChannelData(0), 20000,
+    model.cuttingPoints[index][0], model.cuttingPoints[index][1]);
+  var minLag = Infinity;
+  var nearest = null;
+  points.forEach(function(point) {
+    var lag = Math.abs(point[0] - (dataIndex + model.cuttingPoints[index][0]));
+    if(lag < minLag) {
+      minLag = lag;
+      nearest = point[0];
+    }
+  });
+  return nearest;
 }
 function refreshSource() {
   var context = model.audioContext;
@@ -382,7 +383,15 @@ function renderMain() {
     renderLoading('Now compressing waves...(' +
       model.encodedFiles.length + '/' + model.cuttingPoints.length + ' done)') :
     (model.loading ? renderLoading('Now loading and processing...') : renderWaves());
-  return h('div#container.container', [ h('div#canvas-container', main) ]);
+  return h('div#container.container', {
+    on: {
+      mousemove: function(e) {
+        if(e.target.tagName !== 'CANVAS' && model.hover) {
+          dispatch('hover', null);
+        }
+      }
+    }
+  }, [ h('div#canvas-container', main) ]);
 }
 function renderGithubLink() {
   return h('a.icon-github' + (mobile() ? '' : '.pull-right'),
@@ -582,6 +591,7 @@ function renderWave(point, index) {
     },
     on: {
       mousemove: function(e) {
+        e.preventDefault();
         dispatch('hover', [index, e.offsetX]);
       },
       click: function(e) {
@@ -632,6 +642,16 @@ function renderWaveOnCanvas0(layer0, width, height, point, index) {
 function renderWaveOnCanvas1(layer1, width, height, point, index) {
   var ctx = layer1.getContext('2d');
   ctx.clearRect(0, 0, width, height);
+  if(model.hover && (model.hover[0] === index)) {
+    var toBeCut = findNearestToBeCut(model.hover[0], model.hover[1], width);
+    var left = width * ((toBeCut - model.cuttingPoints[index][0]) / (model.cuttingPoints[index][1] - model.cuttingPoints[index][0]));
+    ctx.strokeStyle = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(left + 0.5, height);
+    ctx.lineTo(left + 0.5, 0);
+    ctx.closePath();
+    ctx.stroke();
+  }
   if(model.toBeCut) {
     if(model.cuttingPoints[index][0] <= model.toBeCut &&
       model.toBeCut < model.cuttingPoints[index][1]) {
