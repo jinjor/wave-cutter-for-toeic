@@ -12950,7 +12950,7 @@ function update(type, data) {
       var interval = 100;
       var nextPos = currentPos + (interval / 1000) * model.sampleRate;
       var nextIndex = indexOfPosition(nextPos);
-      if(startIndex === nextIndex) {
+      if(startIndex === nextIndex && nextIndex !== null) {
         setTimeout(function() {
           dispatch('tick');
         }, interval);
@@ -13029,10 +13029,11 @@ function dataLengthOfTime(ms) {
 }
 function indexOfPosition(position) {
   for(var i = model.cuttingPoints.length -1; i >= 0; i--) {
-    if(model.cuttingPoints[i][0] <= position) {
+    if(model.cuttingPoints[i][0] <= position && position < model.cuttingPoints[i][1]) {
       return i;
     }
   }
+  return null;
 }
 function inRangeOf(index, pos) {
   return model.cuttingPoints[index][0] <= pos && pos < model.cuttingPoints[index][1];
