@@ -10,6 +10,7 @@ var patch = snabbdom.init([
 ]);
 var h = require('snabbdom/h');
 var namingTypes = require('./names.js');
+var core = require('./core.js');
 
 function mobile() {
   var ua = navigator.userAgent;
@@ -657,27 +658,7 @@ function renderWaveOnCanvas1(layer1, width, height, point, index) {
     }
   }
 }
-var requestRendering = 0;
-var container = document.getElementById('container');
-var old = container;
 
-function dispatch(type, data) {
-  // console.log(type);
-  setTimeout(function() {
-    update(type, data);
-    requestRendering++;
-  });
-}
-(function loop() {
-  if(requestRendering) {
-    // console.log(requestRendering);
-    requestRendering = 0;
-    var vnode = render();
-    patch(old, vnode);
-    old = vnode;
-  }
-  requestAnimationFrame(loop);
-})();
 document.onkeydown = function (e) {
   if(e.keyCode === 90 && e.ctrlKey && e.shiftKey) {
     dispatch('redo');
@@ -693,6 +674,14 @@ document.addEventListener('scroll', function() {
     dispatch('fix-control', true);
   } else {
     dispatch('fix-control', false);
+  }
+});
+var dispatch = core.start({
+  update: update,
+  render: render,
+  patch: function(oldVNode, newVNode) {
+    oldVNode = oldVNode || document.getElementById('container');
+    patch(oldVNode, newVNode);
   }
 });
 dispatch('init');

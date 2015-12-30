@@ -12763,6 +12763,7 @@ var patch = snabbdom.init([
 ]);
 var h = require('snabbdom/h');
 var namingTypes = require('./names.js');
+var core = require('./core.js');
 
 function mobile() {
   var ua = navigator.userAgent;
@@ -13410,27 +13411,7 @@ function renderWaveOnCanvas1(layer1, width, height, point, index) {
     }
   }
 }
-var requestRendering = 0;
-var container = document.getElementById('container');
-var old = container;
 
-function dispatch(type, data) {
-  // console.log(type);
-  setTimeout(function() {
-    update(type, data);
-    requestRendering++;
-  });
-}
-(function loop() {
-  if(requestRendering) {
-    // console.log(requestRendering);
-    requestRendering = 0;
-    var vnode = render();
-    patch(old, vnode);
-    old = vnode;
-  }
-  requestAnimationFrame(loop);
-})();
 document.onkeydown = function (e) {
   if(e.keyCode === 90 && e.ctrlKey && e.shiftKey) {
     dispatch('redo');
@@ -13448,9 +13429,50 @@ document.addEventListener('scroll', function() {
     dispatch('fix-control', false);
   }
 });
+var dispatch = core.start({
+  update: update,
+  render: render,
+  patch: function(oldVNode, newVNode) {
+    oldVNode = oldVNode || document.getElementById('container');
+    patch(oldVNode, newVNode);
+  }
+});
 dispatch('init');
 
-},{"./logic.js":55,"./names.js":56,"async":1,"jszip":15,"snabbdom":52,"snabbdom/h":46,"snabbdom/modules/class":48,"snabbdom/modules/eventlisteners":49,"snabbdom/modules/props":50,"snabbdom/modules/style":51}],55:[function(require,module,exports){
+},{"./core.js":55,"./logic.js":56,"./names.js":57,"async":1,"jszip":15,"snabbdom":52,"snabbdom/h":46,"snabbdom/modules/class":48,"snabbdom/modules/eventlisteners":49,"snabbdom/modules/props":50,"snabbdom/modules/style":51}],55:[function(require,module,exports){
+
+function start(options) {
+  var requestRendering = 0;
+  var patch = options.patch;
+  var update = options.update;
+  var render = options.render;
+  var old = null;
+
+  function dispatch(type, data) {
+    // console.log(type);
+    setTimeout(function() {
+      update(type, data);
+      requestRendering++;
+    });
+  }
+  (function loop() {
+    if(requestRendering) {
+      // console.log(requestRendering);
+      requestRendering = 0;
+      var vnode = render();
+      patch(old, vnode);
+      old = vnode;
+    }
+    requestAnimationFrame(loop);
+  })();
+
+  return dispatch;
+}
+module.exports = {
+  start: start
+};
+
+},{}],56:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 function readData(data, current) {
@@ -13555,7 +13577,7 @@ module.exports = {
   cuttingPoints: cuttingPoints
 };
 
-},{"buffer":2}],56:[function(require,module,exports){
+},{"buffer":2}],57:[function(require,module,exports){
 function namingType0() {
   return {
     name: 'None',
