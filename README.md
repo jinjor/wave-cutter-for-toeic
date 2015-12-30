@@ -31,3 +31,39 @@ You can choose naming rules from below.
 |Part3+|40|41-43, 41, 42, 43, 44-46, 44, 45, 46, ..., 68-70, 68, 69, 70|
 |Part4|10|71-73, 74-76, ..., 98-100|
 |Part4+|40|71-73, 71, 72, 73, 74-76, 74, 75, 76, ..., 98-100, 98, 99, 100|
+
+## Support
+
+### Browsers
+
+|Browser|Supported|
+|:--|:--|
+|Chrome|✓|
+|Firefox|✓|
+|Edge|✓|
+|Safari|Not tested|
+|Opera|Not tested|
+|IE11|Not tested|
+|IE10|Not tested|
+|IE9|Not tested|
+|IE8|Not tested|
+|Mobile browsers|Not supported|
+
+### Decoding format
+
+|Format|Supported|
+|:--|:--|
+|.mp3|✓|
+|.ogg|Not tested|
+|.aac|Not tested|
+|.wav|Not tested|
+|other formats|Not supported|
+
+### Encoding format
+
+|Format|Supported|
+|:--|:--|
+|.mp3|✓|
+|other formats|Not supported|
+
+
