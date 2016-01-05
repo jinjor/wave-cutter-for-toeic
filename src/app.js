@@ -58,7 +58,8 @@ var model = {
   fixControl: false,
   maxRows: 0,
   namingTypes: namingTypes,
-  namingType: 2,
+  namingType: 1,
+  namingFrom: 1,
   encodedFiles: [],
   audioContext: window.AudioContext ? new AudioContext() : null
 };
@@ -129,6 +130,11 @@ function update(type, data) {
     }
     model.namingType = newType;
     saveActionsAndState();
+  } else if(type === 'name-from-input') {
+    var num = parseInt(data);
+    if(!isNaN(num)) {
+      model.namingFrom = num;
+    }
   } else if(type === 'play') {
     var index = data;
     var context = model.audioContext;
@@ -221,8 +227,7 @@ function update(type, data) {
           samples[j] = Math.floor(buf[j] * 32767);
         }
         encodeMp3(samples/*Int16Array*/, 1, model.data.sampleRate, 128, function(e, blob) {
-          var name = model.namingTypes[model.namingType].names[i];
-          var fileName = (i + 1) + (name ? '_no' + name : '') + '.mp3';
+          var fileName = fileNameOfIndex(i);
           var reader = new FileReader();
           reader.onload = function() {
             zip.file(fileName, reader.result, {binary:true});
@@ -362,6 +367,39 @@ function stop() {
   model.startTime = null;
   model.currentTime = null;
 }
+
+function namingRuleLength() {
+  var rule = namingRule();
+  if(rule.name === 'From') {
+    return model.cuttingPoints.length;
+  } else {
+    return rule.names.length;
+  }
+}
+function namingRule() {
+  return model.namingTypes[model.namingType];
+}
+function fileNameOfIndex(i) {
+  var rule = namingRule();
+  if(rule.name === 'From') {
+    return (model.namingFrom + i) + '.mp3';
+  } else {
+    var name = naming(i);
+    var fileName = (i + 1) + (name ? '_no' + name : '') + '.mp3';
+    return fileName
+  }
+}
+function naming(i) {
+  var rule = namingRule();
+  if(rule.name === 'From') {
+    return '' + (model.namingFrom + i);
+  } else {
+    return rule.names[i];
+  }
+}
+
+
+//-- VIEW --
 function render() {
   var contents;
   if(mobile()) {
@@ -461,7 +499,7 @@ function renderRedoButton() {
   });
 }
 function renderNamingButton() {
-  var name = h('div.naming-button', [model.namingTypes[model.namingType].name]);
+  var name = renderNamingRuleLabel();
   var prev = h('div.btn.prev-step', {
     on: {
       click: function() {
@@ -476,8 +514,24 @@ function renderNamingButton() {
       }
     }
   });
-
   return h('div.naming-button-container', [prev, name, next]);
+}
+function renderNamingRuleLabel() {
+  var rule = namingRule()
+  var children = [rule.name];
+  if(rule.name === 'From') {
+    children.push(h('input.name-from-input', { on: {
+      input: function(e) {
+        dispatch('name-from-input', e.target.value);
+      },
+      blur: function(e) {
+        setTimeout(dispatch);
+      }
+    }, props: {
+      value: '' + model.namingFrom
+    }}))
+  }
+  return h('div.naming-button', children);
 }
 function renderSaveButton(step) {
   return h('button.btn.btn-' + (step === 1 ? 'primary' : 'default'), {
@@ -512,7 +566,7 @@ function renderControls() {
     children.push(renderRedoButton());
     children.push(renderNamingButton());
 
-    var expected = model.namingTypes[model.namingType].names.length;
+    var expected = namingRuleLength();
     var actual = model.cuttingPoints.length;
     var count = h('div.wave-count' + (expected === actual ? '.matched' : ''), [
       h('span.wave-count-number', [actual]),
@@ -538,7 +592,7 @@ function renderWaves() {
 function renderWave(point, index) {
   var height = 34;
   var width = (point[1] - point[0]) / model.data.sampleRate * 10;
-  var name = h('span.wave-area-name', [model.namingTypes[model.namingType].names[index] || '　']);
+  var name = h('span.wave-area-name', [naming(index) || '　']);
   var deleteButton = h('span.wave-area-button.wave-area-delete.btn.btn-danger.glyphicon.glyphicon-remove', {
     on: {
       click: function(e) {

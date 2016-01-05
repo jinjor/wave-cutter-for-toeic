@@ -100,5 +100,11 @@ function namingType8() {
   };
 }
 
-module.exports = [namingType0(), namingType1(), namingType2(), namingType3(),
-  namingType4(), namingType5(), namingType6(), namingType7(), namingType8()];
+function namingType9() {
+  return {
+    name: 'From'
+  };
+}
+
+module.exports = [namingType1(), namingType2(), namingType3(),
+  namingType4(), namingType5(), namingType6(), namingType7(), namingType8(), namingType9()];
