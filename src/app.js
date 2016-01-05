@@ -109,6 +109,7 @@ function update(type, data) {
         try {
           model.actions = value.actions;
           model.namingType = value.namingType;
+          model.namingFrom = value.namingFrom || 1;
           model.actionCursor = model.actions.length - 1;
           replay();
         } catch(e) {
@@ -134,6 +135,7 @@ function update(type, data) {
     var num = parseInt(data);
     if(!isNaN(num)) {
       model.namingFrom = num;
+      saveActionsAndState();
     }
   } else if(type === 'play') {
     var index = data;
@@ -332,7 +334,8 @@ function saveActionsAndState() {
     var key = model.fileName + ':' + model.data.length;
     var value = {
       actions: model.actions,
-      namingType: model.namingType
+      namingType: model.namingType,
+      namingFrom: model.namingFrom
     }
     localStorage.setItem(key, JSON.stringify(value));
   } catch(e) {
