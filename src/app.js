@@ -235,7 +235,9 @@ function update(type, data) {
   } else if(type === 'hover') {
     model.hover = data;
   } else if(type === 'create-button') {
-    stop();
+    if(model.currentTime) {
+      stop();
+    }
     model.encodedFiles = [];
     var zip = new JSZip();
     var data = model.data.getChannelData(0);
