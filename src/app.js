@@ -61,7 +61,9 @@ var model = {
   namingType: 1,
   namingFrom: 1,
   encodedFiles: [],
-  audioContext: window.AudioContext ? new AudioContext() : null
+  audioContext: window.AudioContext ? new AudioContext() : null,
+  fileName: null,
+  loading: false
 };
 
 function update(type, data) {
@@ -70,6 +72,19 @@ function update(type, data) {
   } else if(type === 'read-button') {
     var reader = new FileReader();
     reader.onload = function(e) {
+      // reset
+      model.actions = [];
+      model.actionCursor = -1;
+      model.source = null;
+      model.startPosition = null;
+      model.startTime = null;
+      model.currentTime = null;
+      model.hover = null;
+      model.toBeCut = null;
+      model.fixControl = false;
+      model.maxRows = 0;
+      model.encodedFiles = [];
+      //
       var context = model.audioContext;
       context.decodeAudioData(e.target.result, function(decodedData) {
         model.data = decodedData.getChannelData(0);
@@ -108,7 +123,9 @@ function update(type, data) {
       if(yes) {
         try {
           model.actions = value.actions;
-          model.namingType = value.namingType;
+          if(value.namingType < model.namingTypes.length) {
+            model.namingType = value.namingType;
+          }
           model.namingFrom = value.namingFrom || 1;
           model.actionCursor = model.actions.length - 1;
           replay();
@@ -520,7 +537,7 @@ function renderNamingButton() {
   return h('div.naming-button-container', [prev, name, next]);
 }
 function renderNamingRuleLabel() {
-  var rule = namingRule()
+  var rule = namingRule();
   var children = [rule.name];
   if(rule.name === 'From') {
     children.push(h('input.name-from-input', { on: {
