@@ -573,7 +573,7 @@ function renderLoadButton(step) {
   }, [
     h('span', ['Choose file']),
   ]), h('input#read.read', {
-    props:{type:'file'},
+    props:{type:'file', accept:'.wav,.mp3,.ogg,.aac'},
     on: {
       change: function(e) {
         var file = e.target.files[0];
