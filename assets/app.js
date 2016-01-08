@@ -12770,7 +12770,7 @@ function start(options) {
   var old = null;
 
   function dispatch(type, data) {
-    console.log(type);
+    // console.log(type);
     setTimeout(function() {
       model.update(type, data);
       requestRendering++;
@@ -12929,6 +12929,7 @@ module.exports = function(dispatch) {
     sampleRate: null,
     originalCuttingPoints: null,
     cuttingPoints: null,
+    saving: false
   };
 
   function update(type, data) {
@@ -13330,6 +13331,7 @@ module.exports = function(dispatch) {
     get cuttingPoints() { return model.cuttingPoints; },
     get data() { return model.data; },
     get sampleRate() { return model.sampleRate; },
+    get saving() { return model.saving; },
     get canUndo() { return model.actionCursor >= 0; },
     get canRedo() { return model.actionCursor < model.actions.length - 1; },
     update: update,

@@ -7,7 +7,7 @@ function start(options) {
   var old = null;
 
   function dispatch(type, data) {
-    console.log(type);
+    // console.log(type);
     setTimeout(function() {
       model.update(type, data);
       requestRendering++;
