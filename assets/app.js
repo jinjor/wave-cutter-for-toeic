@@ -12368,13 +12368,54 @@ module.exports = function h(sel, b, c) {
   return VNode(sel, data, children, text, undefined);
 };
 
-},{"./is":47,"./vnode":53}],47:[function(require,module,exports){
+},{"./is":47,"./vnode":54}],47:[function(require,module,exports){
 module.exports = {
   array: Array.isArray,
   primitive: function(s) { return typeof s === 'string' || typeof s === 'number'; },
 };
 
 },{}],48:[function(require,module,exports){
+var booleanAttrs = ["allowfullscreen", "async", "autofocus", "autoplay", "checked", "compact", "controls", "declare", 
+                "default", "defaultchecked", "defaultmuted", "defaultselected", "defer", "disabled", "draggable", 
+                "enabled", "formnovalidate", "hidden", "indeterminate", "inert", "ismap", "itemscope", "loop", "multiple", 
+                "muted", "nohref", "noresize", "noshade", "novalidate", "nowrap", "open", "pauseonexit", "readonly", 
+                "required", "reversed", "scoped", "seamless", "selected", "sortable", "spellcheck", "translate", 
+                "truespeed", "typemustmatch", "visible"];
+    
+var booleanAttrsDict = {};
+for(var i=0, len = booleanAttrs.length; i < len; i++) {
+  booleanAttrsDict[booleanAttrs[i]] = true;
+}
+    
+function updateAttrs(oldVnode, vnode) {
+  var key, cur, old, elm = vnode.elm,
+      oldAttrs = oldVnode.data.attrs || {}, attrs = vnode.data.attrs || {};
+  
+  // update modified attributes, add new attributes
+  for (key in attrs) {
+    cur = attrs[key];
+    old = oldAttrs[key];
+    if (old !== cur) {
+      // TODO: add support to namespaced attributes (setAttributeNS)
+      if(!cur && booleanAttrsDict[key])
+        elm.removeAttribute(key);
+      else
+        elm.setAttribute(key, cur);
+    }
+  }
+  //remove removed attributes
+  // use `in` operator since the previous `for` iteration uses it (.i.e. add even attributes with undefined value)
+  // the other option is to remove all attributes with value == undefined
+  for (key in oldAttrs) {
+    if (!(key in attrs)) {
+      elm.removeAttribute(key);
+    }
+  }
+}
+
+module.exports = {create: updateAttrs, update: updateAttrs};
+
+},{}],49:[function(require,module,exports){
 function updateClass(oldVnode, vnode) {
   var cur, name, elm = vnode.elm,
       oldClass = oldVnode.data.class || {},
@@ -12389,7 +12430,7 @@ function updateClass(oldVnode, vnode) {
 
 module.exports = {create: updateClass, update: updateClass};
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 var is = require('../is');
 
 function arrInvoker(arr) {
@@ -12432,7 +12473,7 @@ function updateEventListeners(oldVnode, vnode) {
 
 module.exports = {create: updateEventListeners, update: updateEventListeners};
 
-},{"../is":47}],50:[function(require,module,exports){
+},{"../is":47}],51:[function(require,module,exports){
 function updateProps(oldVnode, vnode) {
   var key, cur, old, elm = vnode.elm,
       oldProps = oldVnode.data.props || {}, props = vnode.data.props || {};
@@ -12447,7 +12488,7 @@ function updateProps(oldVnode, vnode) {
 
 module.exports = {create: updateProps, update: updateProps};
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 var raf = requestAnimationFrame || setTimeout;
 var nextFrame = function(fn) { raf(function() { raf(fn); }); };
 
@@ -12508,7 +12549,7 @@ function applyRemoveStyle(vnode, rm) {
 
 module.exports = {create: updateStyle, update: updateStyle, destroy: applyDestroyStyle, remove: applyRemoveStyle};
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 // jshint newcap: false
 /* global require, module, document, Element */
 'use strict';
@@ -12743,14 +12784,14 @@ function init(modules) {
 
 module.exports = {init: init};
 
-},{"./is":47,"./vnode":53}],53:[function(require,module,exports){
+},{"./is":47,"./vnode":54}],54:[function(require,module,exports){
 module.exports = function(sel, data, children, text, elm) {
   var key = data === undefined ? undefined : data.key;
   return {sel: sel, data: data, children: children,
           text: text, elm: elm, key: key};
 };
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var core = require('./core.js');
 var view = require('./view.js');
 var model = require('./model.js');
@@ -12760,7 +12801,7 @@ core.start({
   view: view
 });
 
-},{"./core.js":55,"./model.js":57,"./view.js":59}],55:[function(require,module,exports){
+},{"./core.js":56,"./model.js":58,"./view.js":60}],56:[function(require,module,exports){
 
 function start(options) {
   var requestRendering = 0;
@@ -12794,7 +12835,7 @@ module.exports = {
   start: start
 };
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 var Buffer = require('buffer').Buffer;
 
 function readData(data, current) {
@@ -12899,7 +12940,7 @@ module.exports = {
   cuttingPoints: cuttingPoints
 };
 
-},{"buffer":2}],57:[function(require,module,exports){
+},{"buffer":2}],58:[function(require,module,exports){
 var logic = require('./logic.js');
 var async = require('async');
 var JSZip = require("jszip");
@@ -13346,7 +13387,7 @@ module.exports = function(dispatch) {
   };
 }
 
-},{"./logic.js":56,"./names.js":58,"async":1,"jszip":15}],58:[function(require,module,exports){
+},{"./logic.js":57,"./names.js":59,"async":1,"jszip":15}],59:[function(require,module,exports){
 function namingType0() {
   return {
     name: 'None',
@@ -13458,11 +13499,12 @@ function namingType9() {
 module.exports = [namingType1(), namingType2(), namingType3(),
   namingType4(), namingType5(), namingType6(), namingType7(), namingType8(), namingType9()];
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 var snabbdom = require('snabbdom');
 var patch = snabbdom.init([
   require('snabbdom/modules/class'),
   require('snabbdom/modules/props'),
+  require('snabbdom/modules/attributes'),
   require('snabbdom/modules/style'),
   require('snabbdom/modules/eventlisteners'),
 ]);
@@ -13621,23 +13663,24 @@ module.exports = function(model, dispatch) {
     }, ['Save']);
   }
   function renderLoadButton(step) {
-    return h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
-      props:{for:'read'},
+    return [ h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
+      attrs:{for:'read'},
+    }, [
+      h('span', ['Choose file']),
+    ]), h('input#read.read', {
+      props:{type:'file', accept:'.wav,.mp3,.ogg,.aac'},
       on: {
         change: function(e) {
           var file = e.target.files[0];
           dispatch('read-button', file);
         }
       }
-    }, [
-      h('span', ['Choose file']),
-      h('input#read.read', {props:{type:'file', accept:'.wav,.mp3,.ogg,.aac'}})
-    ]);
+    })];
   }
 
   function renderControls() {
     var step = model.cuttingPoints ? 1 : 0;
-    var children = [renderLoadButton(step)];
+    var children = renderLoadButton(step);
     if(model.cuttingPoints) {
       children.push(renderSaveButton(step));
       children.push(renderUndoButton());
@@ -13837,4 +13880,4 @@ module.exports = function(model, dispatch) {
   };
 }
 
-},{"snabbdom":52,"snabbdom/h":46,"snabbdom/modules/class":48,"snabbdom/modules/eventlisteners":49,"snabbdom/modules/props":50,"snabbdom/modules/style":51}]},{},[54]);
+},{"snabbdom":53,"snabbdom/h":46,"snabbdom/modules/attributes":48,"snabbdom/modules/class":49,"snabbdom/modules/eventlisteners":50,"snabbdom/modules/props":51,"snabbdom/modules/style":52}]},{},[55]);
