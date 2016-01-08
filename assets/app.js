@@ -13510,14 +13510,6 @@ var patch = snabbdom.init([
 ]);
 var h = require('snabbdom/h');
 
-function mobile() {
-  var ua = navigator.userAgent;
-  // return true;
-  return ((ua.indexOf('iPhone') > 0 && ua.indexOf('iPad') < 0)
-    || ua.indexOf('iPod') > 0
-    || ua.indexOf('Android') > 0);
-}
-
 module.exports = function(model, dispatch) {
 
   function render() {
@@ -13853,6 +13845,15 @@ module.exports = function(model, dispatch) {
       }
     }
   }
+
+  function mobile() {
+    var ua = navigator.userAgent;
+    // return true;
+    return ((ua.indexOf('iPhone') > 0 && ua.indexOf('iPad') < 0)
+      || ua.indexOf('iPod') > 0
+      || ua.indexOf('Android') > 0);
+  }
+
   document.onkeydown = function (e) {
     if(e.keyCode === 90 && e.ctrlKey && e.shiftKey) {
       dispatch('redo');
