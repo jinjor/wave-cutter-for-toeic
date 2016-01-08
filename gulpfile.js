@@ -17,8 +17,8 @@ gulp.task('build', function() {
     .pipe(source('app.js'))
 		.pipe(buffer())
 		.pipe(sourcemaps.init())
-		.pipe(uglify())
-		.pipe(sourcemaps.write('.'))
+		// .pipe(uglify())
+		// .pipe(sourcemaps.write('.'))
     .pipe(plumber())
     .pipe(gulp.dest('./assets'));
 });
