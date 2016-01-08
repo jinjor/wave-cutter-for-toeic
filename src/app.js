@@ -5,6 +5,7 @@ var snabbdom = require('snabbdom');
 var patch = snabbdom.init([
   require('snabbdom/modules/class'),
   require('snabbdom/modules/props'),
+  require('snabbdom/modules/attributes'),
   require('snabbdom/modules/style'),
   require('snabbdom/modules/eventlisteners'),
 ]);
@@ -566,23 +567,25 @@ function renderSaveButton(step) {
   }, ['Save']);
 }
 function renderLoadButton(step) {
-  return h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
-    props:{for:'read'},
+  return [ h('label.btn.btn-' + (step === 0 ? 'primary' : 'default'), {
+    attrs:{for:'read'},
+
+  }, [
+    h('span', ['Choose file']),
+  ]), h('input#read.read', {
+    props:{type:'file'},
     on: {
       change: function(e) {
         var file = e.target.files[0];
         dispatch('read-button', file);
       }
     }
-  }, [
-    h('span', ['Choose file']),
-    h('input#read.read', {props:{type:'file', accept:'.wav,.mp3,.ogg,.aac'}})
-  ]);
+  })];
 }
 
 function renderControls() {
   var step = model.cuttingPoints ? 1 : 0;
-  var children = [renderLoadButton(step)];
+  var children = renderLoadButton(step);
   if(model.cuttingPoints) {
     children.push(renderSaveButton(step));
     children.push(renderUndoButton());
