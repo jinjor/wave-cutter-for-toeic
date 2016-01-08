@@ -2,29 +2,30 @@
 function start(options) {
   var requestRendering = 0;
   var patch = options.patch;
-  var update = options.update;
-  var render = options.render;
+  var model = options.model(dispatch);
+  var view = options.view(model, dispatch);
   var old = null;
 
   function dispatch(type, data) {
     // console.log(type);
     setTimeout(function() {
-      update(type, data);
+      model.update(type, data);
       requestRendering++;
     });
   }
-  (function loop() {
+  function loop() {
     if(requestRendering) {
       // console.log(requestRendering);
       requestRendering = 0;
-      var vnode = render();
-      patch(old, vnode);
+      var vnode = view.render();
+      view.patch(old, vnode);
       old = vnode;
     }
     requestAnimationFrame(loop);
-  })();
+  };
+  loop();
 
-  return dispatch;
+  dispatch('init');
 }
 module.exports = {
   start: start
