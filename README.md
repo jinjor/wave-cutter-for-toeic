@@ -43,7 +43,7 @@ You can choose naming rules from below.
 |Edge|✓|
 |Safari|Not tested|
 |Opera|Not tested|
-|IE8-11|✗|
+|IE9-11|✗|
 |Mobile browsers|Not supported|
 
 ### Decoding format
