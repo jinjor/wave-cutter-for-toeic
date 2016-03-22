@@ -1,6 +1,8 @@
 # Wave Cutter for TOEIC&reg;
 
-A tool for cutting wave of listening CD. This may be useful when you seek and repeat one problem.
+A tool for editing wave data of TOEIC listening CD.
+This tool divide one wave into multiple waves which contains one question for each.
+You'll never need to spend time looking for start point from one big wave.
 
 **[Try it!](http://jinjor.github.io/wave-cutter-for-toeic)**
 
@@ -9,12 +11,11 @@ A tool for cutting wave of listening CD. This may be useful when you seek and re
 
 ## Usage
 
-1. Load your MP3 file. It's wave will be cut automatically.
-2. You'll need to edit cutting points manually.
+1. Load your MP3 file. Its wave will be automatically divided into multiple waves.
+2. Sometimes you'll need to edit cutting points manually.
 3. Generate ZIP file that contains all waves in form of MP3.
 
 About 2, you can think it's a kind of game of matching file names and waves.
-
 
 ### Naming rules
 
