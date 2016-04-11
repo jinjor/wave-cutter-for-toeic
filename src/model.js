@@ -2,6 +2,7 @@ var logic = require('./logic.js');
 var async = require('async');
 var JSZip = require("jszip");
 var namingTypes = require('./names.js');
+var namingTypesOld = require('./namesOld.js');
 
 module.exports = function(dispatch) {
 
@@ -32,7 +33,9 @@ module.exports = function(dispatch) {
 
   function update(type, data) {
     if(type === 'init') {
-
+      changeVersion();
+    } else if (type === 'change-version') {
+      changeVersion();
     } else if(type === 'read-button') {
       var reader = new FileReader();
       reader.onload = function(e) {
@@ -235,6 +238,12 @@ module.exports = function(dispatch) {
     } else if(type === 'save-done') {
       model.saving = false;
     }
+  }
+
+  function changeVersion() {
+    var hash = window.location.hash;
+    var isOld = hash === '#old-version';
+    model.namingTypes = isOld ? namingTypesOld : namingTypes;
   }
 
   function encodeMp3(samples/*Int16Array*/, channels, sampleRate, kbps, cb) {

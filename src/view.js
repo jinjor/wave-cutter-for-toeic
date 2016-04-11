@@ -369,7 +369,9 @@ module.exports = function(model, dispatch) {
       dispatch('fix-control', false);
     }
   });
-
+  window.addEventListener('hashchange', function() {
+    dispatch('change-version');
+  });
   return {
     render: render,
     patch: function(oldVNode, newVNode) {

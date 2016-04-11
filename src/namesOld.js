@@ -6,11 +6,11 @@ function namingType0() {
 }
 function namingType1() {
   var names = [];
-  for(var i = 1; i <= 31; i++) {
+  for(var i = 1; i <= 40; i++) {
     names.push('' + i);
   }
-  for(var i = 0; i < 23; i++) {
-    names.push((31 + 3*i + 1) + '-' + (31 + 3*i + 3));
+  for(var i = 0; i < 20; i++) {
+    names.push((40 + 3*i + 1) + '-' + (40 + 3*i + 3));
   }
   return {
     name: 'All',
@@ -19,14 +19,14 @@ function namingType1() {
 }
 function namingType2() {
   var names = [];
-  for(var i = 1; i <= 31; i++) {
+  for(var i = 1; i <= 40; i++) {
     names.push('' + i);
   }
-  for(var i = 0; i < 23; i++) {
-    names.push((31 + 3*i + 1) + '-' + (31 + 3*i + 3));
-    names.push(31 + 3*i + 1);
-    names.push(31 + 3*i + 2);
-    names.push(31 + 3*i + 3);
+  for(var i = 0; i < 20; i++) {
+    names.push((40 + 3*i + 1) + '-' + (40 + 3*i + 3));
+    names.push(40 + 3*i + 1);
+    names.push(40 + 3*i + 2);
+    names.push(40 + 3*i + 3);
   }
   return {
     name: 'All+',
@@ -35,7 +35,7 @@ function namingType2() {
 }
 function namingType3() {
   var names = [];
-  for(var i = 1; i <= 6; i++) {
+  for(var i = 1; i <= 10; i++) {
     names.push('' + i);
   }
   return {
@@ -45,7 +45,7 @@ function namingType3() {
 }
 function namingType4() {
   var names = [];
-  for(var i = 7; i <= 31; i++) {
+  for(var i = 11; i <= 40; i++) {
     names.push('' + i);
   }
   return {
@@ -55,8 +55,8 @@ function namingType4() {
 }
 function namingType5() {
   var names = [];
-  for(var i = 0; i < 13; i++) {
-    names.push((31 + 3*i + 1) + '-' + (31 + 3*i + 3));
+  for(var i = 0; i < 10; i++) {
+    names.push((40 + 3*i + 1) + '-' + (40 + 3*i + 3));
   }
   return {
     name: 'Part3',
@@ -65,11 +65,11 @@ function namingType5() {
 }
 function namingType6() {
   var names = [];
-  for(var i = 0; i < 13; i++) {
-    names.push((31 + 3*i + 1) + '-' + (31 + 3*i + 3));
-    names.push(31 + 3*i + 1);
-    names.push(31 + 3*i + 2);
-    names.push(31 + 3*i + 3);
+  for(var i = 0; i < 10; i++) {
+    names.push((40 + 3*i + 1) + '-' + (40 + 3*i + 3));
+    names.push(40 + 3*i + 1);
+    names.push(40 + 3*i + 2);
+    names.push(40 + 3*i + 3);
   }
   return {
     name: 'Part3+',
@@ -78,8 +78,8 @@ function namingType6() {
 }
 function namingType7() {
   var names = [];
-  for(var i = 13; i < 23; i++) {
-    names.push((31 + 3*i + 1) + '-' + (31 + 3*i + 3));
+  for(var i = 10; i < 20; i++) {
+    names.push((40 + 3*i + 1) + '-' + (40 + 3*i + 3));
   }
   return {
     name: 'Part4',
@@ -88,11 +88,11 @@ function namingType7() {
 }
 function namingType8() {
   var names = [];
-  for(var i = 13; i < 23; i++) {
-    names.push((31 + 3*i + 1) + '-' + (31 + 3*i + 3));
-    names.push(31 + 3*i + 1);
-    names.push(31 + 3*i + 2);
-    names.push(31 + 3*i + 3);
+  for(var i = 10; i < 20; i++) {
+    names.push((40 + 3*i + 1) + '-' + (40 + 3*i + 3));
+    names.push(40 + 3*i + 1);
+    names.push(40 + 3*i + 2);
+    names.push(40 + 3*i + 3);
   }
   return {
     name: 'Part4+',
