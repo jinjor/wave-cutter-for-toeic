@@ -4,7 +4,7 @@ A tool for editing wave data of TOEIC listening CD.
 This tool divide one wave into multiple waves which contains one question for each.
 You'll never need to spend time looking for start point from one big wave.
 
-**[Try it!](http://jinjor.github.io/wave-cutter-for-toeic)** ([Older Format](http://jinjor.github.io/wave-cutter-for-toeic#older-version))
+**[Try it!](http://jinjor.github.io/wave-cutter-for-toeic)** ([Older Format](http://jinjor.github.io/wave-cutter-for-toeic#old-version))
 
 <img width="600px" src="./wc4t-screen.png">
 
